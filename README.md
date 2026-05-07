@@ -23,20 +23,52 @@ Required keys:
 
 ## Usage
 
+### CLI
+
 ```bash
-npx ts-node src/index.ts
+npx ts-node src/index.ts [topic] [numScenes] [--voice]
 ```
 
-Or import the workflow directly:
+| Argument | Required | Default | Description |
+|---|---|---|---|
+| `topic` | No | `"Indian cyberpunk street food market in monsoon with cinematic camera motion"` | The video topic or idea to generate |
+| `numScenes` | No | `1` | Number of scenes in the storyboard (1–5 recommended) |
+| `--voice` | No | off | Enable TTS voiceover generation and video+audio merging |
+
+**Examples:**
+
+```bash
+# Quick single-scene video (defaults)
+npx ts-node src/index.ts
+
+# Custom topic, single scene
+npx ts-node src/index.ts "Mumbai cyberpunk monsoon at night"
+
+# Multi-scene with voiceover
+npx ts-node src/index.ts "Ancient Varanasi meets cyberpunk" 3 --voice
+
+# Multi-scene without voiceover
+npx ts-node src/index.ts "AI-generated luxury lifestyle" 5
+```
+
+### Programmatic API
 
 ```typescript
 import { viralShortWorkflow } from "./src/workflows/viralShortWorkflow.js";
 
 const result = await viralShortWorkflow(
   "Cyberpunk Delhi street market in monsoon",
-  { numScenes: 3, withVoice: true }
+  { numScenes: 3, withVoice: true, niche: "Cyberpunk India" }
 );
 ```
+
+`viralShortWorkflow` accepts three options in its second argument:
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `numScenes` | `number` | `1` | Number of storyboard scenes to generate |
+| `withVoice` | `boolean` | `false` | Whether to generate a TTS voiceover and merge with video |
+| `niche` | `string` | `"Cyberpunk India"` | Content niche override (see prompts.ts for the full list) |
 
 ## Pipeline
 
