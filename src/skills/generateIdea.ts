@@ -1,0 +1,1 @@
+// generateIdea.ts
