@@ -11,7 +11,7 @@ Focus on:
 - high retention`;
 
 export async function generateVideoPrompt(topic: string) {
-  const model = getModel("openrouter", "moonshotai/kimi-k2.6");
+  const model = getModel("opencode-go", "deepseek-v4-pro");
 
   const context = {
     systemPrompt: SYSTEM_PROMPT,
@@ -24,7 +24,7 @@ export async function generateVideoPrompt(topic: string) {
   };
 
   const response = await complete(model, context, {
-    apiKey: process.env.OPENROUTER_API_KEY,
+    apiKey: process.env.OPENCODE_API_KEY,
   });
 
   for (const block of response.content) {
