@@ -19,6 +19,7 @@ export async function generateVideoPrompt(topic: string) {
       {
         role: "user" as const,
         content: `Create a viral cinematic AI video prompt about: ${topic}`,
+        timestamp: Date.now(),
       },
     ],
   };

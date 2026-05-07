@@ -1,6 +1,6 @@
 // generateVideo.ts
 
-import { fal } from '../providers/fal'
+import { fal } from '../providers/fal.js'
 
 export async function generateVideo(prompt: string) {
   const result = await fal.subscribe(
@@ -15,7 +15,7 @@ export async function generateVideo(prompt: string) {
         cfg_scale: 0.5
       },
       logs: true,
-      onQueueUpdate(update) {
+      onQueueUpdate(update: unknown) {
         console.log(update)
       }
     }

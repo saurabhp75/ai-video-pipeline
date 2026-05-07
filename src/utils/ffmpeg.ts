@@ -3,7 +3,7 @@
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegPath from 'ffmpeg-static'
 
-ffmpeg.setFfmpegPath(ffmpegPath!)
+ffmpeg.setFfmpegPath(ffmpegPath as unknown as string);
 
 export async function mergeVideoAndAudio(
   videoPath: string,

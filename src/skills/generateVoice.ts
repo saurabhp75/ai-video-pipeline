@@ -1,6 +1,6 @@
 // generateVoice.ts
 
-import { fal } from '../providers/fal'
+import { fal } from '../providers/fal.js'
 
 export async function generateVoice(text: string) {
   const result = await fal.subscribe(
@@ -8,10 +8,10 @@ export async function generateVoice(text: string) {
     {
       input: {
         text,
-        voice: 'tara'
-      }
-    }
-  )
+        voice_id: "calm_story1" as const,
+      },
+    },
+  );
 
   return result.data.audio.url
 }

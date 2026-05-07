@@ -1,2 +1,4 @@
 allowBuilds:
+  '@google/genai': true
   ffmpeg-static: true
+  protobufjs: true
