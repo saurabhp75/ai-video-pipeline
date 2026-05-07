@@ -23,6 +23,34 @@ Required keys:
 
 ## Usage
 
+### Pi Coding Agent Skills
+
+Import as a Pi package or use skills directly with `/skill:ai-video-*` commands:
+
+```bash
+# Install as Pi package
+pi install ./ai-video-pipeline
+
+# Or use skills inline
+/skill:ai-video-pipeline "Mumbai cyberpunk" 3 --voice
+/skill:ai-video-idea "Cyberpunk India"
+/skill:ai-video-prompt "Indian street food at night"
+/skill:ai-video-generate "Cinematic drone shot of..."
+/skill:ai-video-voice "Hook: Discover the future..."
+/skill:ai-video-merge
+```
+
+Available Pi skills:
+
+| Skill | Description | Arguments |
+|---|---|---|
+| `ai-video-pipeline` | Full end-to-end pipeline (idea → video → save) | `[topic] [numScenes] [--voice]` |
+| `ai-video-idea` | Generate viral video ideas | `[niche] [count]` |
+| `ai-video-prompt` | Generate cinematic AI video prompts | `[topic]` |
+| `ai-video-generate` | Generate video via fal.ai Kling | `[prompt]` |
+| `ai-video-voice` | Generate TTS voiceover | `[text for voiceover]` |
+| `ai-video-merge` | Merge video + audio with ffmpeg | `[videoPath] [audioPath] [outputPath]` |
+
 ### CLI
 
 ```bash
@@ -84,23 +112,39 @@ Idea Generation (LLM)
 ## Project Structure
 
 ```
-src/
-├── skills/          # Individual pipeline skills
-│   ├── generateIdea.ts        # LLM-based viral idea generation
-│   ├── generatePrompt.ts      # Cinematic prompt generation
-│   ├── generateStoryboard.ts  # Scene-by-scene storyboard
-│   ├── generateScenes.ts      # Full scene prompt pipeline
-│   ├── generateVideo.ts       # fal.ai Kling video generation
-│   ├── generateVoice.ts       # Kling TTS voiceover
-│   ├── mergeAssets.ts         # Video + audio merging
-│   └── upload.ts              # Save to local disk
-├── providers/
-│   └── fal.ts                 # fal.ai client config
-├── utils/
-│   ├── logger.ts              # Structured logging
-│   ├── ffmpeg.ts              # FFmpeg helpers
-│   └── prompts.ts             # Prompt templates & constants
-├── workflows/
-│   └── viralShortWorkflow.ts  # Full pipeline orchestrator
-└── index.ts                   # Entry point
+ai-video-pipeline/
+├── skills/                  # Pi Coding Agent skills (SKILL.md files)
+│   ├── ai-video-pipeline/   # Full pipeline orchestrator
+│   ├── ai-video-idea/       # Viral idea generator
+│   ├── ai-video-prompt/     # Cinematic prompt generator
+│   ├── ai-video-generate/   # Video generation via Kling
+│   ├── ai-video-voice/      # TTS voiceover generation
+│   └── ai-video-merge/      # Video + audio merging
+├── src/
+│   ├── skills/              # Individual pipeline skills (TypeScript)
+│   │   ├── generateIdea.ts        # LLM-based viral idea generation
+│   │   ├── generatePrompt.ts      # Cinematic prompt generation
+│   │   ├── generateStoryboard.ts  # Scene-by-scene storyboard
+│   │   ├── generateScenes.ts      # Full scene prompt pipeline
+│   │   ├── generateVideo.ts       # fal.ai Kling video generation
+│   │   ├── generateVoice.ts       # Kling TTS voiceover
+│   │   ├── mergeAssets.ts         # Video + audio merging
+│   │   └── upload.ts              # Save to local disk
+│   ├── providers/
+│   │   └── fal.ts                 # fal.ai client config
+│   ├── utils/
+│   │   ├── logger.ts              # Structured logging
+│   │   ├── ffmpeg.ts              # FFmpeg helpers
+│   │   └── prompts.ts             # Prompt templates & constants
+│   ├── workflows/
+│   │   └── viralShortWorkflow.ts  # Full pipeline orchestrator
+│   └── index.ts                   # Entry point
+├── .env
+├── .env.example
+├── .gitignore
+├── .npmrc
+├── package.json
+├── pnpm-lock.yaml
+├── tsconfig.json
+└── README.md
 ```

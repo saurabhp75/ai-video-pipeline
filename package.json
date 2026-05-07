@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["pi-package"],
   "author": "",
   "license": "ISC",
   "type": "module",
@@ -20,6 +20,9 @@
     "node-fetch": "^3.3.2",
     "openai": "^6.36.0",
     "zod": "^4.4.3"
+  },
+  "pi": {
+    "skills": ["./skills"]
   },
   "devDependencies": {
     "@types/fluent-ffmpeg": "^2.1.28",
