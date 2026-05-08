@@ -6,20 +6,52 @@ async function main() {
     "Indian cyberpunk street food market in monsoon with cinematic camera motion";
 
   const numScenes = parseInt(process.argv[3] ?? "1", 10);
+
+  // Feature flags
   const withVoice = process.argv.includes("--voice");
+  const withCaptions = process.argv.includes("--captions");
+  const withMusic = process.argv.includes("--music");
+  const withPublish = process.argv.includes("--publish");
+
+  // Music options
+  const musicGenreIdx = process.argv.indexOf("--music-genre");
+  const musicGenre =
+    musicGenreIdx !== -1 ? process.argv[musicGenreIdx + 1] : "cinematic";
+
+  // YouTube options
+  const youtubeTitleIdx = process.argv.indexOf("--youtube-title");
+  const youtubeTitle =
+    youtubeTitleIdx !== -1 ? process.argv[youtubeTitleIdx + 1] : undefined;
+
+  const isPublic = process.argv.includes("--public");
 
   console.log("=".repeat(60));
   console.log("  AI Video Pipeline");
   console.log("=".repeat(60));
   console.log();
 
-  const result = await viralShortWorkflow(topic, { numScenes, withVoice });
+  const result = await viralShortWorkflow(topic, {
+    numScenes,
+    withVoice,
+    withCaptions,
+    withMusic,
+    musicGenre,
+    musicVolume: 0.15,
+    publishToYoutube: withPublish,
+    youtubeTitle,
+    youtubePrivacy: isPublic ? "public" : "private",
+  });
 
   console.log();
   console.log("=".repeat(60));
   console.log("  RESULT");
   console.log("=".repeat(60));
   console.log(JSON.stringify(result, null, 2));
+
+  if (result.youtubeUrl) {
+    console.log();
+    console.log(`🎬 Watch on YouTube: ${result.youtubeUrl}`);
+  }
 }
 
 main().catch(console.error);

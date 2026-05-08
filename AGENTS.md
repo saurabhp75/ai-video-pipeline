@@ -53,7 +53,7 @@ See `skills/<name>/SKILL.md` for each skill's full instructions.
 ## Pipeline Flow
 
 ```
-Idea Generation (LLM) → Storyboard + Scene Prompts (LLM) → Video Generation (Kling) → Voiceover (optional, Kling TTS) → Merge (ffmpeg) → Save to Disk
+Idea Generation (LLM) → Storyboard + Scene Prompts (LLM) → Video Generation (Kling) → Voiceover (optional, Kling TTS) → Merge (ffmpeg) → Captions (optional, local whisper.cpp + ffmpeg) → Music (optional, Suno + ffmpeg) → Publish (optional, YouTube API) → Save to Disk
 ```
 
 ## Code Conventions
@@ -79,6 +79,9 @@ Idea Generation (LLM) → Storyboard + Scene Prompts (LLM) → Video Generation 
 | `src/skills/generateVideo.ts` | Kling video generation |
 | `src/skills/generateVoice.ts` | Kling TTS voiceover |
 | `src/skills/mergeAssets.ts` | Download + merge video/audio |
+| `src/skills/generateCaptions.ts` | Local whisper.cpp transcripts + burnt-in captions |
+| `src/skills/generateMusic.ts` | Suno AI music generation + ffmpeg overlay |
+| `src/skills/publishToYouTube.ts` | YouTube Data API v3 publishing |
 | `src/skills/upload.ts` | Save video to disk |
 | `src/providers/fal.ts` | fal.ai client config |
 | `src/utils/logger.ts` | Structured logging |

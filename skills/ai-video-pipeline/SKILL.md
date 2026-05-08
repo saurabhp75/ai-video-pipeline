@@ -1,12 +1,12 @@
 ---
 name: ai-video-pipeline
-description: 'Generate viral short-form AI videos. Use when the user wants to create AI-generated videos, viral shorts, video content for Instagram/TikTok/YouTube, or run the full video generation pipeline (idea → storyboard → video → voiceover → merge → save).'
-argument-hint: "[topic] [numScenes] [--voice]"
+description: 'Generate viral short-form AI videos. Use when the user wants to create AI-generated videos, viral shorts, video content for Instagram/TikTok/YouTube, or run the full video generation pipeline (idea → storyboard → video → voiceover → captions → music → publish → save).'
+argument-hint: "[topic] [numScenes] [--voice] [--captions] [--music] [--publish]"
 ---
 
 # AI Video Pipeline
 
-End-to-end AI video generation pipeline using Opencode Go (DeepSeek V4 Pro) for text generation and fal.ai (Kling Video) for video generation.
+End-to-end AI video generation pipeline using Opencode Go (DeepSeek V4 Pro) for text generation, fal.ai (Kling Video) for video, local whisper.cpp for captions, and Suno for music.
 
 ## Setup
 
@@ -16,9 +16,11 @@ Make sure dependencies are installed and environment variables are set:
 cd ai-video-pipeline && pnpm install
 ```
 
-Check that `.env` contains:
-- `FAL_KEY` — fal.ai API key
-- `OPENCODE_API_KEY` — Opencode Go API key
+Check that `.env` contains (see `.env.example` for full list):
+- `FAL_KEY` — fal.ai API key (required)
+- `OPENCODE_API_KEY` — Opencode Go API key (required)
+- `SUNO_API_KEY` — Suno API key (for music)
+- Captions use local whisper.cpp — no API key needed
 
 ## Quick Start
 
@@ -32,9 +34,15 @@ cd ai-video-pipeline && npx ts-node src/index.ts
 
 | Argument | Required | Default | Description |
 |---|---|---|---|
-| `topic` | No | "Indian cyberpunk street food market in monsoon with cinematic camera motion" | Video topic |
+| `topic` | No | "Indian cyberpunk..." | Video topic |
 | `numScenes` | No | `1` | Number of scenes (1–5) |
 | `--voice` | No | off | Enable TTS voiceover + ffmpeg merge |
+| `--captions` | No | off | Generate burnt-in captions (Whisper) |
+| `--music` | No | off | Generate + overlay background music (Suno) |
+| `--music-genre` | No | `cinematic` | Genre for background music |
+| `--publish` | No | off | Publish to YouTube after generation |
+| `--public` | No | off | Make YouTube video public (default: private) |
+| `--youtube-title` | No | auto | Custom YouTube video title |
 
 ## Examples
 
@@ -42,11 +50,14 @@ cd ai-video-pipeline && npx ts-node src/index.ts
 # Quick single-scene video
 npx ts-node src/index.ts
 
-# Custom topic
-npx ts-node src/index.ts "Mumbai cyberpunk monsoon at night"
+# Full production: voiceover + captions + music
+npx ts-node src/index.ts "Mumbai cyberpunk monsoon at night" 1 --voice --captions --music
 
-# Multi-scene with voiceover
-npx ts-node src/index.ts "Ancient Varanasi meets cyberpunk" 3 --voice
+# Full automated: generate everything + publish to YouTube
+npx ts-node src/index.ts "Ancient Varanasi meets cyberpunk" 1 --voice --captions --music --publish --public
+
+# Cyberpunk music for the right vibe
+npx ts-node src/index.ts "Neon Tokyo night market" 1 --music --music-genre cyberpunk --publish
 ```
 
 ## Pipeline Steps
@@ -58,13 +69,33 @@ The workflow executes these steps in order:
 3. **Video Generation** — Calls fal.ai Kling API for each scene
 4. **Voiceover** (optional) — Generates TTS audio
 5. **Merge** (optional) — Combines video + audio with ffmpeg
-6. **Save** — Downloads final video to `output/` directory
+6. **Captions** (optional) — Transcribes with local whisper.cpp + burns subtitles into video
+7. **Music** (optional) — Generates background music with Suno + overlays onto video
+8. **Publish** (optional) — Uploads to YouTube (Shorts format)
+9. **Save** — Saves final video to `output/` directory
+
+## Available Skills
+
+| Skill | Description |
+|---|---|
+| `ai-video-pipeline` | Full end-to-end pipeline |
+| `ai-video-idea` | Viral video idea generation |
+| `ai-video-prompt` | Cinematic prompt generation |
+| `ai-video-generate` | Video generation via Kling |
+| `ai-video-voice` | TTS voiceover generation |
+| `ai-video-merge` | Video + audio merging |
+| `ai-video-captions` | Auto-captions via Whisper |
+| `ai-video-music` | Background music via Suno |
+| `ai-video-publish` | YouTube publishing |
 
 ## Troubleshooting
 
 - If fal.ai returns errors, check `FAL_KEY` in `.env`
 - If text generation fails, check `OPENCODE_API_KEY` in `.env`
-- Videos save to `output/viral-<timestamp>.mp4`
+- If captions fail, check `OPENAI_API_KEY` in `.env`
+- If music fails, check `SUNO_API_KEY` in `.env`
+- If YouTube upload fails, check OAuth credentials in `.env`
+- Videos save to `output/viral-*.mp4`
 
 ## References
 

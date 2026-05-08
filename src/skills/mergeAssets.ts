@@ -1,9 +1,17 @@
 import { mergeVideoAndAudio } from "../utils/ffmpeg.js";
+import { copyFile } from "fs/promises";
 
 export interface MergeInput {
+  /** URL or local path to the video file */
   videoUrl: string;
+  /** URL or local path to the audio file */
   audioUrl: string;
+  /** Output path for the merged video */
   outputPath: string;
+}
+
+function isURL(str: string): boolean {
+  return str.startsWith("http://") || str.startsWith("https://");
 }
 
 export async function downloadAndMerge(input: MergeInput): Promise<string> {
@@ -17,15 +25,25 @@ export async function downloadAndMerge(input: MergeInput): Promise<string> {
   const audioPath = path.join(tmpDir, "audio.mp3");
 
   try {
-    // Download video
-    console.log(`Downloading video from: ${input.videoUrl}`);
-    const videoResponse = await fetch(input.videoUrl);
-    await fs.writeFile(videoPath, Buffer.from(await videoResponse.arrayBuffer()));
+    // Get video (download from URL or copy local file)
+    if (isURL(input.videoUrl)) {
+      console.log(`Downloading video from: ${input.videoUrl}`);
+      const videoResponse = await fetch(input.videoUrl);
+      await fs.writeFile(videoPath, Buffer.from(await videoResponse.arrayBuffer()));
+    } else {
+      console.log(`Copying local video: ${input.videoUrl}`);
+      await copyFile(input.videoUrl, videoPath);
+    }
 
-    // Download audio
-    console.log(`Downloading audio from: ${input.audioUrl}`);
-    const audioResponse = await fetch(input.audioUrl);
-    await fs.writeFile(audioPath, Buffer.from(await audioResponse.arrayBuffer()));
+    // Get audio (download from URL or copy local file)
+    if (isURL(input.audioUrl)) {
+      console.log(`Downloading audio from: ${input.audioUrl}`);
+      const audioResponse = await fetch(input.audioUrl);
+      await fs.writeFile(audioPath, Buffer.from(await audioResponse.arrayBuffer()));
+    } else {
+      console.log(`Copying local audio: ${input.audioUrl}`);
+      await copyFile(input.audioUrl, audioPath);
+    }
 
     // Merge
     console.log(`Merging video + audio to: ${input.outputPath}`);

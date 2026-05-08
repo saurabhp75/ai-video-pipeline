@@ -1,9 +1,21 @@
 # AI Video Pipeline
 
-AI-powered viral short-form video generation pipeline using:
+AI-powered viral short-form video generation pipeline with end-to-end automation.
+
+```
+Idea → Script → Video → Voiceover → Captions → Music → Publish 📤
+```
+
+## Stack
+
 - **@mariozechner/pi-ai** + **Opencode Go** (DeepSeek V4 Pro) for text generation
-- **fal.ai** + **Kling Video** for video generation
+- **fal.ai** + **Kling Video 2.5 Turbo Pro** for video generation
+- **whisper.cpp** (local) for auto-captions — no API keys, runs offline
+- **Suno API** for AI-generated background music
+- **YouTube Data API v3** for auto-publishing
 - **FFmpeg** for post-processing
+- **pnpm** — package manager
+- **TypeScript** with `module: NodeNext`, `type: module`
 
 ## Setup
 
@@ -18,50 +30,35 @@ cp .env.example .env
 ```
 
 Required keys:
-- `FAL_KEY` — fal.ai API key (get one at https://fal.ai)
+- `FAL_KEY` — fal.ai API key (https://fal.ai)
 - `OPENCODE_API_KEY` — Opencode Go API key
 
+Optional keys (for enhanced features):
+- `SUNO_API_KEY` — Suno API key (for background music)
+- `YOUTUBE_CLIENT_EMAIL` + `YOUTUBE_PRIVATE_KEY` — YouTube service account (for publishing)
+
 ## Usage
-
-### Pi Coding Agent Skills
-
-Import as a Pi package or use skills directly with `/skill:ai-video-*` commands:
-
-```bash
-# Install as Pi package
-pi install ./ai-video-pipeline
-
-# Or use skills inline
-/skill:ai-video-pipeline "Mumbai cyberpunk" 3 --voice
-/skill:ai-video-idea "Cyberpunk India"
-/skill:ai-video-prompt "Indian street food at night"
-/skill:ai-video-generate "Cinematic drone shot of..."
-/skill:ai-video-voice "Hook: Discover the future..."
-/skill:ai-video-merge
-```
-
-Available Pi skills:
-
-| Skill | Description | Arguments |
-|---|---|---|
-| `ai-video-pipeline` | Full end-to-end pipeline (idea → video → save) | `[topic] [numScenes] [--voice]` |
-| `ai-video-idea` | Generate viral video ideas | `[niche] [count]` |
-| `ai-video-prompt` | Generate cinematic AI video prompts | `[topic]` |
-| `ai-video-generate` | Generate video via fal.ai Kling | `[prompt]` |
-| `ai-video-voice` | Generate TTS voiceover | `[text for voiceover]` |
-| `ai-video-merge` | Merge video + audio with ffmpeg | `[videoPath] [audioPath] [outputPath]` |
 
 ### CLI
 
 ```bash
-npx ts-node src/index.ts [topic] [numScenes] [--voice]
+npx ts-node src/index.ts [topic] [numScenes] [flags]
 ```
 
 | Argument | Required | Default | Description |
 |---|---|---|---|
-| `topic` | No | `"Indian cyberpunk street food market in monsoon with cinematic camera motion"` | The video topic or idea to generate |
-| `numScenes` | No | `1` | Number of scenes in the storyboard (1–5 recommended) |
-| `--voice` | No | off | Enable TTS voiceover generation and video+audio merging |
+| `topic` | No | Indian cyberpunk... | Video topic or idea |
+| `numScenes` | No | `1` | Number of scenes (1–5 recommended) |
+
+| Flag | Description |
+|---|---|
+| `--voice` | Enable TTS voiceover + merge |
+| `--captions` | Generate burnt-in captions (Whisper) |
+| `--music` | Generate + overlay background music (Suno) |
+| `--music-genre <genre>` | Music genre (default: cinematic) |
+| `--publish` | Publish to YouTube |
+| `--public` | Make YouTube video public |
+| `--youtube-title <title>` | Custom YouTube title |
 
 **Examples:**
 
@@ -69,14 +66,31 @@ npx ts-node src/index.ts [topic] [numScenes] [--voice]
 # Quick single-scene video (defaults)
 npx ts-node src/index.ts
 
-# Custom topic, single scene
-npx ts-node src/index.ts "Mumbai cyberpunk monsoon at night"
+# With voiceover
+npx ts-node src/index.ts "Mumbai cyberpunk monsoon" 1 --voice
 
-# Multi-scene with voiceover
-npx ts-node src/index.ts "Ancient Varanasi meets cyberpunk" 3 --voice
+# Full production: voiceover + captions + music
+npx ts-node src/index.ts "Ancient Varanasi meets cyberpunk" 1 --voice --captions --music
 
-# Multi-scene without voiceover
-npx ts-node src/index.ts "AI-generated luxury lifestyle" 5
+# Full automation: generate + publish to YouTube
+npx ts-node src/index.ts "Neon Tokyo night market" 1 --voice --captions --music --publish --public
+```
+
+### Pi Coding Agent Skills
+
+```bash
+# Run full pipeline
+/skill:ai-video-pipeline "Mumbai cyberpunk" 1 --voice --captions --music --publish
+
+# Individual skills
+/skill:ai-video-idea "Cyberpunk India"
+/skill:ai-video-prompt "Indian street food at night"
+/skill:ai-video-generate "Cinematic drone shot of..."
+/skill:ai-video-voice "Hook: Discover the future..."
+/skill:ai-video-captions "./output/video.mp4" "./output/captioned.mp4"
+/skill:ai-video-music "cyberpunk" "./output/video.mp4"
+/skill:ai-video-publish "./output/video.mp4" "My Video Title" --public
+/skill:ai-video-merge
 ```
 
 ### Programmatic API
@@ -86,65 +100,86 @@ import { viralShortWorkflow } from "./src/workflows/viralShortWorkflow.js";
 
 const result = await viralShortWorkflow(
   "Cyberpunk Delhi street market in monsoon",
-  { numScenes: 3, withVoice: true, niche: "Cyberpunk India" }
+  {
+    numScenes: 1,
+    withVoice: true,
+    withCaptions: true,
+    withMusic: true,
+    musicGenre: "cyberpunk",
+    publishToYoutube: true,
+    youtubePrivacy: "public",
+  }
 );
+
+console.log(result.youtubeUrl); // https://youtube.com/watch?v=...
 ```
-
-`viralShortWorkflow` accepts three options in its second argument:
-
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `numScenes` | `number` | `1` | Number of storyboard scenes to generate |
-| `withVoice` | `boolean` | `false` | Whether to generate a TTS voiceover and merge with video |
-| `niche` | `string` | `"Cyberpunk India"` | Content niche override (see prompts.ts for the full list) |
 
 ## Pipeline
 
 ```
-Idea Generation (LLM)
-  → Storyboard + Scene Prompts (LLM)
-  → Video Generation (fal.ai Kling)
-  → Voiceover (optional, fal.ai Kling TTS)
-  → Merge Video + Audio (ffmpeg)
-  → Save to Disk
+┌──────────┬───────────┬───────────┬───────────┬────────────┐
+│ DISCOVER │  CREATE   │ ENHANCE   │  PUBLISH  │   SAVE     │
+├──────────┼───────────┼───────────┼───────────┼────────────┤
+│ LLM Idea │ LLM Script│ Captions  │ YouTube   │ output/    │
+│ → Hook   │ → Scenes  │ Music     │ Shorts    │ viral-*.mp4│
+│ → Niche  │ Kling Vid │ Voiceover │ (private/ │            │
+│          │ fal.ai    │ FFmpeg    │  public)  │            │
+└──────────┴───────────┴───────────┴───────────┴────────────┘
 ```
 
 ## Project Structure
 
 ```
 ai-video-pipeline/
-├── skills/                  # Pi Coding Agent skills (SKILL.md files)
-│   ├── ai-video-pipeline/   # Full pipeline orchestrator
-│   ├── ai-video-idea/       # Viral idea generator
-│   ├── ai-video-prompt/     # Cinematic prompt generator
-│   ├── ai-video-generate/   # Video generation via Kling
-│   ├── ai-video-voice/      # TTS voiceover generation
-│   └── ai-video-merge/      # Video + audio merging
+├── skills/                    # Pi Coding Agent skills (SKILL.md files)
+│   ├── ai-video-pipeline/     # Full pipeline orchestrator
+│   ├── ai-video-idea/         # Viral idea generator
+│   ├── ai-video-prompt/       # Cinematic prompt generator
+│   ├── ai-video-generate/     # Video generation via Kling
+│   ├── ai-video-voice/        # TTS voiceover generation
+│   ├── ai-video-merge/        # Video + audio merging
+│   ├── ai-video-captions/     # Auto-captions (Whisper + FFmpeg)
+│   ├── ai-video-music/        # Background music (Suno + FFmpeg)
+│   └── ai-video-publish/      # YouTube publishing
 ├── src/
-│   ├── skills/              # Individual pipeline skills (TypeScript)
-│   │   ├── generateIdea.ts        # LLM-based viral idea generation
-│   │   ├── generatePrompt.ts      # Cinematic prompt generation
-│   │   ├── generateStoryboard.ts  # Scene-by-scene storyboard
-│   │   ├── generateScenes.ts      # Full scene prompt pipeline
-│   │   ├── generateVideo.ts       # fal.ai Kling video generation
-│   │   ├── generateVoice.ts       # Kling TTS voiceover
-│   │   ├── mergeAssets.ts         # Video + audio merging
-│   │   └── upload.ts              # Save to local disk
+│   ├── skills/
+│   │   ├── generateIdea.ts          # LLM-based viral idea generation
+│   │   ├── generatePrompt.ts        # Cinematic prompt generation
+│   │   ├── generateStoryboard.ts    # Scene-by-scene storyboard
+│   │   ├── generateScenes.ts        # Full scene prompt pipeline
+│   │   ├── generateVideo.ts         # fal.ai Kling video generation
+│   │   ├── generateVoice.ts         # Kling TTS voiceover
+│   │   ├── generateCaptions.ts      # Whisper + FFmpeg captions
+│   │   ├── generateMusic.ts         # Suno API + FFmpeg music
+│   │   ├── publishToYouTube.ts      # YouTube Data API publishing
+│   │   ├── mergeAssets.ts           # Video + audio merging
+│   │   └── upload.ts                # Save to local disk
 │   ├── providers/
-│   │   └── fal.ts                 # fal.ai client config
+│   │   └── fal.ts                   # fal.ai client config
 │   ├── utils/
-│   │   ├── logger.ts              # Structured logging
-│   │   ├── ffmpeg.ts              # FFmpeg helpers
-│   │   └── prompts.ts             # Prompt templates & constants
+│   │   ├── logger.ts                # Structured logging
+│   │   ├── ffmpeg.ts                # FFmpeg helpers
+│   │   └── prompts.ts               # Prompt templates & constants
 │   ├── workflows/
-│   │   └── viralShortWorkflow.ts  # Full pipeline orchestrator
-│   └── index.ts                   # Entry point
-├── .env
+│   │   └── viralShortWorkflow.ts    # Full pipeline orchestrator
+│   └── index.ts                     # CLI entry point
 ├── .env.example
-├── .gitignore
-├── .npmrc
 ├── package.json
-├── pnpm-lock.yaml
-├── tsconfig.json
-└── README.md
+└── tsconfig.json
 ```
+
+## Roadmap
+
+- [x] Idea generation (LLM)
+- [x] Video generation (fal.ai Kling)
+- [x] TTS voiceover (Kling TTS)
+- [x] Auto-captions (Whisper + FFmpeg)
+- [x] Background music (Suno + FFmpeg)
+- [x] YouTube publishing (YouTube Data API)
+- [ ] TikTok publishing
+- [ ] Instagram Reels publishing
+- [ ] Trend scraping (YouTube/TikTok trending APIs)
+- [ ] Batch generation (content calendar)
+- [ ] Performance analytics → idea feedback loop
+- [ ] Thumbnail generation
+- [ ] Multi-scene video stitching
