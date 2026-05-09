@@ -10,25 +10,26 @@ Generate AI background music using **ACE-Step 1.5** — an open-source music fou
 
 ## How It Works
 
-1. **ACE-Step API server** runs persistently on `localhost:8001`
-2. **Submit** a generation task with a genre/prompt
-3. **Poll** until the music is generated
-4. **Download** the audio and **overlay** onto video with FFmpeg
+1. **ACE-Step API server** runs persistently on `localhost:8001` — models loaded once, reused across calls
+2. **Submit** a generation task with a genre/prompt via `POST /release_task`
+3. **Poll** for completion via `POST /query_result` every 5s
+4. **Download** the generated MP3 via `GET /v1/audio`
+5. **Overlay** onto video with FFmpeg
 
 ## Prerequisites
 
 ```bash
-# 1. Clone and install ACE-Step
+# 1. Clone and install ACE-Step (one-time)
 cd /Users/saurabh/dev/projects
 git clone https://github.com/ACE-Step/ACE-Step-1.5.git
 cd ACE-Step-1.5
 uv sync
 
-# 2. Download models (~10GB total)
+# 2. Download models (~10GB total, one-time)
 huggingface-cli download ACE-Step/Ace-Step1.5 --local-dir ./checkpoints
 huggingface-cli download ACE-Step/acestep-5Hz-lm-0.6B --local-dir ./checkpoints/acestep-5Hz-lm-0.6B
 
-# 3. Start the API server (keep this running in a terminal)
+# 3. Start the API server (keep this running in a dedicated terminal)
 uv run acestep-api
 ```
 
@@ -130,8 +131,8 @@ const video2 = await overlayMusic({
 - **No API keys, no subscriptions** — 100% free and local
 - Quality: between Suno v4.5 and v5 (commercial-grade)
 - Server must be running: `cd ACE-Step-1.5 && uv run acestep-api`
-- First run loads models (~130s), subsequent runs are faster
-- Old Suno integration preserved in `src/skills/generateMusic.ts`
+- Cold start ~130s on M2 Pro (model loading), subsequent calls are fast (models stay in memory)
+- Old Suno API integration preserved in `src/skills/generateMusic.ts`
 
 ## References
 

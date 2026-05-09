@@ -9,7 +9,7 @@
  *
  * Quality: between Suno v4.5 and v5 — commercial-grade, open-source, local.
  *
- * Requirements:
+ * Start the server (keep running in a terminal):
  *   cd /Users/saurabh/dev/projects/ACE-Step-1.5 && uv run acestep-api
  */
 
@@ -32,7 +32,7 @@ export interface AceStepMusicOptions {
   apiUrl?: string;
   /** Whether to generate instrumental only */
   instrumental?: boolean;
-  /** Max wait time in seconds (default: 180) */
+  /** Max wait time in seconds (default: 300) */
   timeout?: number;
   /** Polling interval in seconds (default: 5) */
   pollInterval?: number;
@@ -149,14 +149,10 @@ class AceStepClient {
     return response.json() as Promise<T>;
   }
 
-  /**
-   * Submit a music generation task.
-   * Uses sample_mode for simple natural language descriptions.
-   */
+  /** Submit a music generation task. Uses sample_mode for natural language descriptions. */
   async submitTask(params: {
     prompt: string;
     duration: number;
-    batchSize?: number;
     thinking?: boolean;
   }): Promise<string> {
     const response = await this.request<AceStepTaskResponse>("/release_task", {
@@ -165,7 +161,7 @@ class AceStepClient {
         sample_mode: true,
         sample_query: params.prompt,
         audio_duration: params.duration,
-        batch_size: params.batchSize ?? 1,
+        batch_size: 1,
         thinking: params.thinking ?? false,
         audio_format: "mp3",
       }),
@@ -178,13 +174,10 @@ class AceStepClient {
     return response.data.task_id;
   }
 
-  /**
-   * Query task status.
-   * Returns null if task not found (expired), the status code otherwise.
-   */
+  /** Query task status. Returns null if task not found (expired). */
   async queryTask(
     taskId: string,
-  ): Promise<{ status: number; audioUrl?: string; duration?: number } | null> {
+  ): Promise<{ status: number; audioUrl?: string } | null> {
     const response = await this.request<AceStepTaskResult>("/query_result", {
       method: "POST",
       body: JSON.stringify({ task_ids: [taskId] }),
@@ -193,16 +186,10 @@ class AceStepClient {
     const result = response.data.results[taskId];
     if (!result) return null;
 
-    return {
-      status: result.status,
-      audioUrl: result.audio_url,
-      duration: result.duration,
-    };
+    return { status: result.status, audioUrl: result.audio_url };
   }
 
-  /**
-   * Download audio from the server's audio endpoint.
-   */
+  /** Download audio from the server's audio endpoint. */
   async downloadAudio(audioPath: string, outputPath: string): Promise<void> {
     const url = `${this.apiUrl}${audioPath}`;
     const response = await fetch(url);
@@ -221,9 +208,7 @@ class AceStepClient {
     });
   }
 
-  /**
-   * Health check — verify the server is running.
-   */
+  /** Health check — verify server is running and models are loaded. */
   async healthCheck(): Promise<boolean> {
     try {
       const response = await this.request<{
@@ -241,7 +226,7 @@ class AceStepClient {
 /**
  * Generate background music via ACE-Step API server.
  *
- * The server must be running:
+ * The server must be running in a terminal:
  *   cd /Users/saurabh/dev/projects/ACE-Step-1.5 && uv run acestep-api
  *
  * @param options - Music generation options
@@ -255,7 +240,7 @@ export async function generateMusicAceStep(
     duration: 30,
     apiUrl: "http://localhost:8001",
     instrumental: true,
-    timeout: 180,
+    timeout: 300,
     pollInterval: 5,
     ...options,
   };
@@ -264,7 +249,6 @@ export async function generateMusicAceStep(
   const prompt =
     opts.prompt ?? GENRE_PROMPTS[genre] ?? GENRE_PROMPTS["cinematic"]!;
 
-  // Append instrumental if not already in prompt
   const finalPrompt = opts.instrumental && !prompt.toLowerCase().includes("instrumental")
     ? `${prompt}, instrumental`
     : prompt;
@@ -282,23 +266,22 @@ export async function generateMusicAceStep(
   if (!healthy) {
     throw new Error(
       "ACE-Step API server is not running or models not initialized.\n" +
-      "Start it with: cd /Users/saurabh/dev/projects/ACE-Step-1.5 && uv run acestep-api",
+      "Start it: cd /Users/saurabh/dev/projects/ACE-Step-1.5 && uv run acestep-api",
     );
   }
 
   const startTime = Date.now();
 
-  // Step 1: Submit generation task
+  // Submit generation task
   const taskId = await client.submitTask({
     prompt: finalPrompt,
     duration: opts.duration,
-    batchSize: 1,
-    thinking: false, // DiT-only is faster for simple instrumental music
+    thinking: false, // DiT-only for instrumentals — faster, still high quality
   });
 
   logger.info("Music task submitted", { taskId });
 
-  // Step 2: Poll until complete
+  // Poll until complete
   const deadline = Date.now() + opts.timeout * 1000;
 
   while (Date.now() < deadline) {
@@ -311,7 +294,6 @@ export async function generateMusicAceStep(
     }
 
     if (result.status === 1) {
-      // Success
       const elapsed = (Date.now() - startTime) / 1000;
       logger.info("Music generation complete", {
         taskId,
@@ -322,22 +304,17 @@ export async function generateMusicAceStep(
         throw new Error("Task completed but no audio URL returned");
       }
 
-      // Step 3: Download the audio
       const outputDir = join(process.cwd(), "output");
       await mkdir(outputDir, { recursive: true });
 
-      const musicPath = join(
-        outputDir,
-        `music-${genre}-${Date.now()}.mp3`,
-      );
-
+      const musicPath = join(outputDir, `music-${genre}-${Date.now()}.mp3`);
       await client.downloadAudio(result.audioUrl, musicPath);
 
       return {
         musicPath,
         prompt: finalPrompt,
         genre,
-        duration: result.duration ?? opts.duration,
+        duration: opts.duration,
         generationTime: elapsed,
       };
     }
@@ -346,9 +323,9 @@ export async function generateMusicAceStep(
       throw new Error(`Music generation failed for task ${taskId}`);
     }
 
-    // status === 0: still running, continue polling
+    // status === 0: still running
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
-    logger.debug(`Waiting for music... (${elapsed}s elapsed)`);
+    logger.debug(`Waiting for music... (${elapsed}s)`);
   }
 
   throw new Error(
@@ -360,18 +337,10 @@ export async function generateMusicAceStep(
 
 /**
  * Overlay background music onto a video using FFmpeg.
- *
- * Mixes music with existing video audio, ducking the music volume
- * so it sits nicely in the background.
- *
- * @param input - Video path, music path, output path, and mixing options
- * @returns Path to the output video with music overlay
  */
-export async function overlayMusic(
-  input: MusicOverlayInput,
-): Promise<string> {
+export async function overlayMusic(input: MusicOverlayInput): Promise<string> {
   const { spawn } = await import("child_process");
-  const musicVol = input.musicVolume ?? 0.12; // Default: quiet background
+  const musicVol = input.musicVolume ?? 0.12;
   const ffmpegBin = "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg";
 
   logger.info("Overlaying background music onto video...", {
@@ -407,43 +376,28 @@ export async function overlayMusic(
   );
 
   return new Promise((resolve, reject) => {
-    const ffmpegProc = spawn(ffmpegBin, args, {
+    const proc = spawn(ffmpegBin, args, {
       stdio: ["ignore", "pipe", "pipe"],
     });
 
     let stderr = "";
-    ffmpegProc.stderr.on("data", (data: Buffer) => {
-      stderr += data.toString();
-    });
+    proc.stderr.on("data", (data: Buffer) => { stderr += data.toString(); });
 
-    ffmpegProc.on("close", (code: number) => {
+    proc.on("close", (code: number) => {
       if (code === 0) {
         logger.info("Music overlay complete", { output: input.outputPath });
         resolve(input.outputPath);
       } else {
-        reject(
-          new Error(
-            `FFmpeg music overlay failed with code ${code}: ${stderr.slice(-300)}`,
-          ),
-        );
+        reject(new Error(`FFmpeg overlay failed with code ${code}: ${stderr.slice(-300)}`));
       }
     });
 
-    ffmpegProc.on("error", reject);
+    proc.on("error", reject);
   });
 }
 
 /**
  * Generate and overlay music on a video in a single step.
- *
- * This is the most convenient way to add music — it handles generation,
- * downloading, and overlay in one call.
- *
- * @param videoPath - Path to the video file
- * @param outputPath - Path for the output video with music
- * @param options - Music generation options (genre, prompt, duration)
- * @param musicVolume - Volume of background music (0-1, default: 0.12)
- * @returns Path to the output video with music overlay
  */
 export async function generateAndOverlayMusicAceStep(
   videoPath: string,
@@ -454,21 +408,14 @@ export async function generateAndOverlayMusicAceStep(
   const music = await generateMusicAceStep(options);
 
   try {
-    const result = await overlayMusic({
+    return await overlayMusic({
       videoPath,
       musicPath: music.musicPath,
       outputPath,
       musicVolume,
     });
-
-    return result;
-  } finally {
-    // Cleanup temp music file
-    try {
-      const dir = music.musicPath.split("/").slice(0, -1).join("/");
-      await rm(dir, { recursive: true, force: true });
-    } catch {
-      // Best effort
-    }
+  } catch (err) {
+    // Overlay failed but music file may be useful — keep it
+    throw err;
   }
 }
