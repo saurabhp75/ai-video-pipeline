@@ -3,7 +3,7 @@
 AI-powered viral short-form video generation pipeline with end-to-end automation.
 
 ```
-Idea → Script → Video → Voiceover → Captions → Music → Publish 📤
+Idea → Script → Video → Voiceover → Captions → Music → Save 📤
 ```
 
 ## Stack
@@ -12,9 +12,7 @@ Idea → Script → Video → Voiceover → Captions → Music → Publish 📤
 - **fal.ai** + **Kling Video 2.5 Turbo Pro** for video generation
 - **whisper.cpp** (local) for auto-captions — no API keys, runs offline
 - **ACE-Step 1.5** (local) for background music — open-source, commercial-grade quality
-- **Suno API** (legacy, optional) for cloud-based music generation
-- **Suno API** for AI-generated background music
-- **YouTube Data API v3** for auto-publishing
+- **macOS `say` / Piper TTS** (local) for voiceover — no API keys
 - **FFmpeg** for post-processing
 - **pnpm** — package manager
 - **TypeScript** with `module: NodeNext`, `type: module`
@@ -35,16 +33,12 @@ Required keys:
 - `FAL_KEY` — fal.ai API key (https://fal.ai)
 - `OPENCODE_API_KEY` — Opencode Go API key
 
-Optional keys (for enhanced features):
-- `SUNO_API_KEY` — Suno API key (for background music)
-- `YOUTUBE_CLIENT_EMAIL` + `YOUTUBE_PRIVATE_KEY` — YouTube service account (for publishing)
-
 ## Usage
 
 ### CLI
 
 ```bash
-npx ts-node src/index.ts [topic] [numScenes] [flags]
+npx tsx src/index.ts [topic] [numScenes] [flags]
 ```
 
 | Argument | Required | Default | Description |
@@ -55,34 +49,31 @@ npx ts-node src/index.ts [topic] [numScenes] [flags]
 | Flag | Description |
 |---|---|
 | `--voice` | Enable TTS voiceover + merge |
-| `--captions` | Generate burnt-in captions (Whisper) |
-| `--music` | Generate + overlay background music (Suno) |
+| `--captions` | Generate burnt-in captions (whisper.cpp) |
+| `--music` | Generate + overlay background music (ACE-Step) |
 | `--music-genre <genre>` | Music genre (default: cinematic) |
-| `--publish` | Publish to YouTube |
-| `--public` | Make YouTube video public |
-| `--youtube-title <title>` | Custom YouTube title |
 
 **Examples:**
 
 ```bash
 # Quick single-scene video (defaults)
-npx ts-node src/index.ts
+npx tsx src/index.ts
 
 # With voiceover
-npx ts-node src/index.ts "Mumbai cyberpunk monsoon" 1 --voice
+npx tsx src/index.ts "Mumbai cyberpunk monsoon" 1 --voice
 
-# Full production: voiceover + captions + music
-npx ts-node src/index.ts "Ancient Varanasi meets cyberpunk" 1 --voice --captions --music
+# Full production: voiceover + captions
+npx tsx src/index.ts "Ancient Varanasi meets cyberpunk" 1 --voice --captions
 
-# Full automation: generate + publish to YouTube
-npx ts-node src/index.ts "Neon Tokyo night market" 1 --voice --captions --music --publish --public
+# Full production + music (requires ACE-Step server running)
+npx tsx src/index.ts "Neon Tokyo night market" 1 --voice --captions --music --music-genre cyberpunk
 ```
 
 ### Pi Coding Agent Skills
 
 ```bash
 # Run full pipeline
-/skill:ai-video-pipeline "Mumbai cyberpunk" 1 --voice --captions --music --publish
+/skill:ai-video-pipeline "Mumbai cyberpunk" 1 --voice --captions --music
 
 # Individual skills
 /skill:ai-video-idea "Cyberpunk India"
@@ -91,7 +82,6 @@ npx ts-node src/index.ts "Neon Tokyo night market" 1 --voice --captions --music 
 /skill:ai-video-voice "Hook: Discover the future..."
 /skill:ai-video-captions "./output/video.mp4" "./output/captioned.mp4"
 /skill:ai-video-music "cyberpunk" "./output/video.mp4"
-/skill:ai-video-publish "./output/video.mp4" "My Video Title" --public
 /skill:ai-video-merge
 ```
 
@@ -108,25 +98,23 @@ const result = await viralShortWorkflow(
     withCaptions: true,
     withMusic: true,
     musicGenre: "cyberpunk",
-    publishToYoutube: true,
-    youtubePrivacy: "public",
   }
 );
 
-console.log(result.youtubeUrl); // https://youtube.com/watch?v=...
+console.log(result.finalPath); // ./output/viral-final-1712345678.mp4
 ```
 
 ## Pipeline
 
 ```
-┌──────────┬───────────┬───────────┬───────────┬────────────┐
-│ DISCOVER │  CREATE   │ ENHANCE   │  PUBLISH  │   SAVE     │
-├──────────┼───────────┼───────────┼───────────┼────────────┤
-│ LLM Idea │ LLM Script│ Captions  │ YouTube   │ output/    │
-│ → Hook   │ → Scenes  │ Music     │ Shorts    │ viral-*.mp4│
-│ → Niche  │ Kling Vid │ Voiceover │ (private/ │            │
-│          │ fal.ai    │ FFmpeg    │  public)  │            │
-└──────────┴───────────┴───────────┴───────────┴────────────┘
+┌──────────┬───────────┬───────────┬────────────┐
+│  CREATE  │  ENHANCE  │  PRODUCE  │   SAVE     │
+├──────────┼───────────┼───────────┼────────────┤
+│ LLM Idea │ Captions  │ Voiceover │ output/    │
+│ → Script │ Music     │ FFmpeg    │ viral-*.mp4│
+│ Kling Vid│ whisper   │ ACE-Step  │            │
+│ fal.ai   │ .cpp      │ local TTS │            │
+└──────────┴───────────┴───────────┴────────────┘
 ```
 
 ## Project Structure
@@ -138,11 +126,11 @@ ai-video-pipeline/
 │   ├── ai-video-idea/         # Viral idea generator
 │   ├── ai-video-prompt/       # Cinematic prompt generator
 │   ├── ai-video-generate/     # Video generation via Kling
-│   ├── ai-video-voice/        # TTS voiceover generation
+│   ├── ai-video-voice/        # Local TTS voiceover (Piper / macOS say)
 │   ├── ai-video-merge/        # Video + audio merging
-│   ├── ai-video-captions/     # Auto-captions (Whisper + FFmpeg)
-│   ├── ai-video-music/        # Background music (Suno + FFmpeg)
-│   └── ai-video-publish/      # YouTube publishing
+│   ├── ai-video-captions/     # Auto-captions (whisper.cpp + FFmpeg)
+│   ├── ai-video-music/        # Background music (ACE-Step + FFmpeg)
+│   └── ai-video-publish/      # YouTube publishing (standalone, not in pipeline)
 ├── src/
 │   ├── skills/
 │   │   ├── generateIdea.ts          # LLM-based viral idea generation
@@ -150,10 +138,12 @@ ai-video-pipeline/
 │   │   ├── generateStoryboard.ts    # Scene-by-scene storyboard
 │   │   ├── generateScenes.ts        # Full scene prompt pipeline
 │   │   ├── generateVideo.ts         # fal.ai Kling video generation
-│   │   ├── generateVoice.ts         # Kling TTS voiceover
-│   │   ├── generateCaptions.ts      # Whisper + FFmpeg captions
-│   │   ├── generateMusic.ts         # Suno API + FFmpeg music
-│   │   ├── publishToYouTube.ts      # YouTube Data API publishing
+│   │   ├── generateVoiceLocal.ts    # Local TTS (Piper / macOS say)
+│   │   ├── generateVoice.ts         # Kling TTS (legacy fallback)
+│   │   ├── generateCaptions.ts      # whisper.cpp + FFmpeg captions
+│   │   ├── generateMusicAceStep.ts  # ACE-Step 1.5 + FFmpeg music
+│   │   ├── generateMusic.ts         # Suno API music (legacy)
+│   │   ├── publishToYouTube.ts      # YouTube Data API (standalone)
 │   │   ├── mergeAssets.ts           # Video + audio merging
 │   │   └── upload.ts                # Save to local disk
 │   ├── providers/
@@ -174,10 +164,10 @@ ai-video-pipeline/
 
 - [x] Idea generation (LLM)
 - [x] Video generation (fal.ai Kling)
-- [x] TTS voiceover (Kling TTS)
-- [x] Auto-captions (Whisper + FFmpeg)
-- [x] Background music (Suno + FFmpeg)
-- [x] YouTube publishing (YouTube Data API)
+- [x] TTS voiceover (local Piper / macOS say)
+- [x] Auto-captions (local whisper.cpp + FFmpeg)
+- [x] Background music (local ACE-Step 1.5 + FFmpeg)
+- [x] YouTube publishing (standalone module)
 - [ ] TikTok publishing
 - [ ] Instagram Reels publishing
 - [ ] Trend scraping (YouTube/TikTok trending APIs)
