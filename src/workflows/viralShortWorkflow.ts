@@ -6,7 +6,6 @@ import { generateCaptions } from "../skills/generateCaptions.js";
 import { generateAndOverlayMusicAceStep } from "../skills/generateMusicAceStep.js";
 import { downloadAndMerge } from "../skills/mergeAssets.js";
 import { saveVideo } from "../skills/upload.js";
-import { publishToYouTube } from "../skills/publishToYouTube.js";
 import { logger } from "../utils/logger.js";
 import * as path from "path";
 
@@ -18,7 +17,6 @@ export interface ViralShortResult {
   mergedPath?: string;
   captionedPath?: string;
   musicPath?: string;
-  youtubeUrl?: string;
 }
 
 export interface ViralShortOptions {
@@ -26,20 +24,14 @@ export interface ViralShortOptions {
   numScenes?: number;
   /** Enable TTS voiceover + merge */
   withVoice?: boolean;
-  /** Enable auto-captions (Whisper + FFmpeg burn-in) */
+  /** Enable auto-captions (whisper.cpp + FFmpeg burn-in) */
   withCaptions?: boolean;
-  /** Enable background music (Suno generation + overlay) */
+  /** Enable background music (ACE-Step + overlay) */
   withMusic?: boolean;
   /** Music genre (default: "cinematic") */
   musicGenre?: string;
   /** Music volume relative to video audio (0-1, default: 0.15) */
   musicVolume?: number;
-  /** Publish to YouTube after generation */
-  publishToYoutube?: boolean;
-  /** YouTube video title */
-  youtubeTitle?: string;
-  /** YouTube privacy status */
-  youtubePrivacy?: "private" | "unlisted" | "public";
   /** Content niche for idea generation */
   niche?: string;
 }
@@ -53,8 +45,7 @@ export interface ViralShortOptions {
  * 5. Merge video + audio (ffmpeg)
  * 6. Generate burnt-in captions (Whisper + ffmpeg)
  * 7. Generate + overlay background music (Suno + ffmpeg)
- * 8. Publish to YouTube
- * 9. Save final video to disk
+ * 8. Save final video to disk
  */
 export async function viralShortWorkflow(
   topic: string,
@@ -67,8 +58,6 @@ export async function viralShortWorkflow(
     withMusic: false,
     musicGenre: "cinematic",
     musicVolume: 0.15,
-    publishToYoutube: false,
-    youtubePrivacy: "private" as const,
     ...options,
   };
 
@@ -78,7 +67,6 @@ export async function viralShortWorkflow(
     voice: opts.withVoice,
     captions: opts.withCaptions,
     music: opts.withMusic,
-    publish: opts.publishToYoutube,
   });
 
   // Step 1: Generate idea
@@ -204,42 +192,10 @@ export async function viralShortWorkflow(
     logger.info("Background music added", { musicPath, genre: opts.musicGenre });
   }
 
-  // Step 8: Publish to YouTube (optional)
-  let youtubeUrl: string | undefined;
-  if (opts.publishToYoutube) {
-    logger.step(8, 9, "Publishing to YouTube...");
-
-    const finalVideoPath = musicPath ?? captionedPath ?? workingVideoPath;
-
-    try {
-      const youtubeResult = await publishToYouTube(finalVideoPath, {
-        title: opts.youtubeTitle ?? `${idea.title} #Shorts`,
-        description: `${idea.hook}\n\n${idea.description}\n\n#AI #Viral #Shorts`,
-        tags: [
-          idea.niche,
-          "Shorts",
-          "Viral",
-          "AI Generated",
-          "AI Video",
-        ].filter(Boolean),
-        privacyStatus: opts.youtubePrivacy,
-        isShort: true,
-      });
-
-      youtubeUrl = youtubeResult.url;
-      logger.info("✅ Published to YouTube!", { youtubeUrl });
-    } catch (err) {
-      logger.warn("YouTube publishing failed (continuing)", {
-        error: String(err),
-      });
-    }
-  }
-
-  // Step 9: Save final video
-  logger.step(9, 9, "Saving final video...");
+  // Step 8: Save final video
+  logger.step(8, 8, "Saving final video...");
 
   const finalVideoPath = musicPath ?? captionedPath ?? workingVideoPath;
-  const finalName = `viral-final-${Date.now()}.mp4`;
 
   // If we already have a local file, just note it
   let finalPath: string;
@@ -249,12 +205,11 @@ export async function viralShortWorkflow(
     finalPath = finalVideoPath;
   } else {
     // Save the video URL to disk
-    finalPath = await saveVideo(videoUrl, finalName);
+    finalPath = await saveVideo(videoUrl, `viral-final-${Date.now()}.mp4`);
   }
 
   logger.info("✅ Workflow complete!", {
     finalPath,
-    youtubeUrl,
     captioned: opts.withCaptions,
     music: opts.withMusic,
     scenesGenerated: scenes.length,
@@ -268,6 +223,5 @@ export async function viralShortWorkflow(
     mergedPath,
     captionedPath,
     musicPath,
-    youtubeUrl,
   };
 }
