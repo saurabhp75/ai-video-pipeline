@@ -51,7 +51,33 @@ npx tsx src/index.ts [topic] [numScenes] [flags]
 | `--voice` | Enable TTS voiceover + merge |
 | `--captions` | Generate burnt-in captions (whisper.cpp) |
 | `--music` | Generate + overlay background music (ACE-Step) |
-| `--music-genre <genre>` | Music genre (default: cinematic) |
+| `--music-genre <genre>` | Music genre (default: cinematic). See [Music Genres](#music-genres) for all options |
+
+### Music Genres
+
+| Genre | Description |
+|---|---|
+| `cinematic` | Epic orchestral, sweeping strings, Hans Zimmer style |
+| `lofi` | Chill lofi hip hop, relaxed study vibes |
+| `orchestra` | Grand orchestral, John Williams style |
+| `ambient` | Atmospheric pads, ethereal textures |
+| `cyberpunk` | Dark synthwave, Blade Runner style |
+| `motivational` | Uplifting piano + strings, triumphant |
+| `horror` | Tense thriller soundtrack, creepy strings |
+| `action` | High-energy percussion, aggressive synths |
+| `spiritual` | Meditative, Indian classical influences, sitar, tabla |
+| `retro` | 80s retro synthwave, nostalgic analog synths |
+| `upbeat` | Upbeat electronic pop instrumental |
+| `piano` | Beautiful solo piano, contemporary classical |
+| `bollywood` | Vibrant Bollywood style, dholak, shehnai, energetic rhythms |
+| `carnatic` | South Indian classical, veena, mridangam, devotional |
+| `hindustani` | North Indian classical, sarod, tabla, alap-jor-jhala |
+| `bhajan` | Devotional bhajan, harmonium, manjira, call-and-response |
+| `folk_punjabi` | Punjabi folk, tumbi, dhol, high-energy bhangra beats |
+| `folk_rajasthani` | Rajasthani folk, kamaicha, khartal, desert melodies |
+| `indie_indian` | Indian indie fusion, contemporary with traditional elements |
+| `sufi` | Sufi qawwali, harmonium, clapping rhythms, spiritual ecstasy |
+| `indian_classical_fusion` | Indian classical meets electronic, tanpura drones + synths |
 
 **Examples:**
 

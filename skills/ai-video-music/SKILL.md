@@ -104,6 +104,15 @@ const video2 = await overlayMusic({
 | `retro` | 80s retro synthwave |
 | `upbeat` | Upbeat electronic pop instrumental |
 | `piano` | Beautiful solo piano, contemporary classical |
+| `bollywood` | Vibrant Bollywood, dholak, shehnai, energetic rhythms |
+| `carnatic` | South Indian classical, veena, mridangam, devotional |
+| `hindustani` | North Indian classical, sarod, tabla, raga exploration |
+| `bhajan` | Devotional bhajan, harmonium, manjira, call-and-response |
+| `folk_punjabi` | Punjabi folk, tumbi, dhol, bhangra beats |
+| `folk_rajasthani` | Rajasthani folk, kamaicha, khartal, desert melodies |
+| `indie_indian` | Indian indie fusion, contemporary + traditional |
+| `sufi` | Sufi qawwali, harmonium, clapping rhythms, spiritual |
+| `indian_classical_fusion` | Indian classical + electronic, tanpura drones + synths |
 
 ## Options
 

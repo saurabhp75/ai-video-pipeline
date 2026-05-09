@@ -91,6 +91,25 @@ const GENRE_PROMPTS: Record<string, string> = {
     "upbeat electronic pop instrumental, energetic beats, catchy synth melodies, positive vibes",
   piano:
     "beautiful solo piano, emotional and melancholic, soft dynamics, contemporary classical, instrumental",
+  // ─── India-specific genres ───
+  bollywood:
+    "vibrant Bollywood film music, dholak rhythms, shehnai melodies, energetic orchestral arrangements, Indian percussion, instrumental",
+  carnatic:
+    "South Indian Carnatic classical music, veena, mridangam, devotional raga, complex talas, meditative, instrumental",
+  hindustani:
+    "North Indian Hindustani classical music, sarod, tabla, alap jor jhala, raga exploration, contemplative, instrumental",
+  bhajan:
+    "devotional bhajan music, harmonium, manjira cymbals, call-and-response melody, spiritual atmosphere, instrumental",
+  folk_punjabi:
+    "Punjabi folk music, tumbi, dhol beats, high-energy bhangra rhythms, celebratory, instrumental",
+  folk_rajasthani:
+    "Rajasthani folk music, kamaicha strings, khartal percussion, desert melodies, Manganiyar style, instrumental",
+  indie_indian:
+    "Indian indie fusion, contemporary production with traditional elements, sitar or tabla accents, modern beats, instrumental",
+  sufi:
+    "Sufi qawwali style, harmonium drones, rhythmic hand claps, spiritual ecstasy, building intensity, instrumental",
+  indian_classical_fusion:
+    "Indian classical fusion, tanpura drones, electronic synths, tabla over modern beats, ambient textures, instrumental",
 };
 
 // ─── ACE-Step API client ───
