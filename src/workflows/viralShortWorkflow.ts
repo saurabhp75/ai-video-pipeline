@@ -1,6 +1,7 @@
 import { generateIdea } from "../skills/generateIdea.js";
 import { generateScenes } from "../skills/generateScenes.js";
 import { generateVideo } from "../skills/generateVideo.js";
+import { generateVideoOpenRouter } from "../skills/generateVideoOpenRouter.js";
 import { generateVoiceLocal } from "../skills/generateVoiceLocal.js";
 import { generateCaptions } from "../skills/generateCaptions.js";
 import { generateAndOverlayMusicAceStep } from "../skills/generateMusicAceStep.js";
@@ -32,6 +33,8 @@ export interface ViralShortOptions {
   musicGenre?: string;
   /** Music volume relative to video audio (0-1, default: 0.15) */
   musicVolume?: number;
+  /** Video provider: "fal" (fal.ai Kling) or "openrouter" (OpenRouter Kling v3 Pro) */
+  videoProvider?: "fal" | "openrouter";
   /** Content niche for idea generation */
   niche?: string;
 }
@@ -40,11 +43,11 @@ export interface ViralShortOptions {
  * Full viral short pipeline:
  * 1. Generate trending video idea (LLM)
  * 2. Generate storyboard + scene prompts (LLM)
- * 3. Generate video (fal.ai Kling)
- * 4. Generate voiceover (fal.ai Kling TTS)
+ * 3. Generate video (fal.ai Kling or OpenRouter Kling v3 Pro)
+ * 4. Generate voiceover (local TTS: Piper / macOS say)
  * 5. Merge video + audio (ffmpeg)
- * 6. Generate burnt-in captions (Whisper + ffmpeg)
- * 7. Generate + overlay background music (Suno + ffmpeg)
+ * 6. Generate burnt-in captions (whisper.cpp + ffmpeg)
+ * 7. Generate + overlay background music (ACE-Step + ffmpeg)
  * 8. Save final video to disk
  */
 export async function viralShortWorkflow(
@@ -58,6 +61,7 @@ export async function viralShortWorkflow(
     withMusic: false,
     musicGenre: "cinematic",
     musicVolume: 0.15,
+    videoProvider: "fal" as const,
     ...options,
   };
 
@@ -67,10 +71,11 @@ export async function viralShortWorkflow(
     voice: opts.withVoice,
     captions: opts.withCaptions,
     music: opts.withMusic,
+    videoProvider: opts.videoProvider,
   });
 
   // Step 1: Generate idea
-  logger.step(1, 9, "Generating content idea...");
+  logger.step(1, 8, "Generating content idea...");
   const idea = await generateIdea(opts.niche ?? "Cyberpunk India");
 
   logger.info("Idea generated", {
@@ -80,25 +85,27 @@ export async function viralShortWorkflow(
   });
 
   // Step 2: Generate cinematic prompt via storyboard + scenes
-  logger.step(2, 9, "Generating scenes and cinematic prompts...");
+  logger.step(2, 8, "Generating scenes and cinematic prompts...");
   const scenes = await generateScenes(topic, opts.numScenes);
 
   // Step 3: Generate video(s)
-  // For now, generate first scene. Multi-scene support can stitch scenes together.
-  logger.step(3, 9, "Generating video...");
+  logger.step(3, 8, `Generating video (${opts.videoProvider})...`);
   const firstScene = scenes[0];
   if (!firstScene) {
     throw new Error("No scenes generated");
   }
   const prompt = firstScene.prompt;
-  const videoUrl = await generateVideo(prompt);
+
+  const videoUrl = opts.videoProvider === "openrouter"
+    ? (await generateVideoOpenRouter({ prompt, duration: 10, aspectRatio: "9:16" })).videoUrl
+    : await generateVideo(prompt);
 
   logger.info("Video generated", { videoUrl });
 
   // Step 4: Generate voiceover (optional)
   let mergedPath: string | undefined;
   if (opts.withVoice) {
-    logger.step(4, 9, "Generating voiceover (local TTS)...");
+    logger.step(4, 8, "Generating voiceover (local TTS)...");
     const voiceoverScript = `Hook: ${idea.hook}. ${idea.description}`;
     const voiceAudioPath = path.join(
       process.cwd(),
@@ -109,7 +116,7 @@ export async function viralShortWorkflow(
     logger.info("Voiceover generated", { engine: voiceResult.engine, voice: voiceResult.voice });
 
     // Step 5: Merge video + audio
-    logger.step(5, 9, "Merging video and audio...");
+    logger.step(5, 8, "Merging video and audio...");
     mergedPath = path.join(
       process.cwd(),
       "output",
@@ -150,7 +157,7 @@ export async function viralShortWorkflow(
   // Step 6: Generate burnt-in captions (optional)
   let captionedPath: string | undefined;
   if (opts.withCaptions) {
-    logger.step(6, 9, "Generating burnt-in captions...");
+    logger.step(6, 8, "Generating burnt-in captions...");
     captionedPath = path.join(
       process.cwd(),
       "output",
@@ -175,7 +182,7 @@ export async function viralShortWorkflow(
   // Step 7: Generate + overlay background music (optional, ACE-Step local)
   let musicPath: string | undefined;
   if (opts.withMusic) {
-    logger.step(7, 9, "Generating music with ACE-Step and overlaying...");
+    logger.step(7, 8, "Generating music with ACE-Step and overlaying...");
     musicPath = path.join(
       process.cwd(),
       "output",

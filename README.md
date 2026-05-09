@@ -9,7 +9,8 @@ Idea → Script → Video → Voiceover → Captions → Music → Save 📤
 ## Stack
 
 - **@mariozechner/pi-ai** + **Opencode Go** (DeepSeek V4 Pro) for text generation
-- **fal.ai** + **Kling Video 2.5 Turbo Pro** for video generation
+- **fal.ai** + **Kling Video 2.5 Turbo Pro** for video generation (default)
+- **OpenRouter** + **Kling v3 Pro** as alternative video provider (unified billing)
 - **whisper.cpp** (local) for auto-captions — no API keys, runs offline
 - **ACE-Step 1.5** (local) for background music — open-source, commercial-grade quality
 - **macOS `say` / Piper TTS** (local) for voiceover — no API keys
@@ -52,6 +53,7 @@ npx tsx src/index.ts [topic] [numScenes] [flags]
 | `--captions` | Generate burnt-in captions (whisper.cpp) |
 | `--music` | Generate + overlay background music (ACE-Step) |
 | `--music-genre <genre>` | Music genre (default: cinematic). See [Music Genres](#music-genres) for all options |
+| `--openrouter` | Use OpenRouter for video gen (default: fal.ai Kling). Requires `OPENROUTER_API_KEY` in `.env` |
 
 ### Music Genres
 
@@ -93,6 +95,9 @@ npx tsx src/index.ts "Ancient Varanasi meets cyberpunk" 1 --voice --captions
 
 # Full production + music (requires ACE-Step server running)
 npx tsx src/index.ts "Neon Tokyo night market" 1 --voice --captions --music --music-genre cyberpunk
+
+# Use OpenRouter for video (unified billing with text gen)
+npx tsx src/index.ts "Mumbai monsoon" 1 --voice --captions --openrouter
 ```
 
 ### Pi Coding Agent Skills

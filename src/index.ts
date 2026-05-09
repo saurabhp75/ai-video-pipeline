@@ -12,6 +12,9 @@ async function main() {
   const withCaptions = process.argv.includes("--captions");
   const withMusic = process.argv.includes("--music");
 
+  // Video provider
+  const useOpenRouter = process.argv.includes("--openrouter");
+
   // Music options
   const musicGenreIdx = process.argv.indexOf("--music-genre");
   const musicGenre =
@@ -29,6 +32,7 @@ async function main() {
     withMusic,
     musicGenre,
     musicVolume: 0.15,
+    videoProvider: useOpenRouter ? "openrouter" : "fal",
   });
 
   console.log();
