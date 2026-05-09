@@ -1,57 +1,89 @@
 ---
 name: ai-video-music
-description: 'Generate AI background music with Suno and overlay it onto videos. Use when adding background music, soundtracks, or audio atmosphere to short-form video content.'
+description: 'Generate AI background music with ACE-Step 1.5 (local, open-source) and overlay it onto videos. Use when adding background music, soundtracks, or audio atmosphere to short-form video content. Runs entirely locally — no API keys, no subscriptions.'
 argument-hint: "[genre] [videoPath?]"
 ---
 
-# AI Video Music
+# AI Video Music (ACE-Step 1.5)
 
-Generate AI background music using the Suno API and overlay it onto videos with FFmpeg audio mixing.
+Generate AI background music using **ACE-Step 1.5** — an open-source music foundation model with quality between Suno v4.5 and v5. Runs locally on your machine via an API server.
 
 ## How It Works
 
-1. **Generate music** via Suno API (text-to-music with genre prompt)
-2. **Download** generated music locally
-3. **Overlay** onto video with FFmpeg (ducked background audio)
+1. **ACE-Step API server** runs persistently on `localhost:8001`
+2. **Submit** a generation task with a genre/prompt
+3. **Poll** until the music is generated
+4. **Download** the audio and **overlay** onto video with FFmpeg
 
 ## Prerequisites
 
-Requires `SUNO_API_KEY` in `.env` (get one at https://suno.com).
+```bash
+# 1. Clone and install ACE-Step
+cd /Users/saurabh/dev/projects
+git clone https://github.com/ACE-Step/ACE-Step-1.5.git
+cd ACE-Step-1.5
+uv sync
+
+# 2. Download models (~10GB total)
+huggingface-cli download ACE-Step/Ace-Step1.5 --local-dir ./checkpoints
+huggingface-cli download ACE-Step/acestep-5Hz-lm-0.6B --local-dir ./checkpoints/acestep-5Hz-lm-0.6B
+
+# 3. Start the API server (keep this running in a terminal)
+uv run acestep-api
+```
+
+No API keys required. 100% local, 100% free.
 
 ## Usage
 
 ```bash
-# As part of the pipeline
-cd ai-video-pipeline && npx ts-node src/index.ts "Mumbai cyberpunk" 1 --music --music-genre cinematic
+# As part of the pipeline (server must be running)
+cd ai-video-pipeline && npx tsx src/index.ts "Mumbai cyberpunk" 1 --music --music-genre cinematic
 
 # Programmatic: generate and overlay in one step
-cd ai-video-pipeline && npx ts-node -e "
-import { generateAndOverlayMusic } from './src/skills/generateMusic.js';
-const output = await generateAndOverlayMusic('./output/video.mp4', './output/with-music.mp4', { genre: 'cyberpunk' });
-console.log(output);
+cd ai-video-pipeline && npx tsx -e "
+import { generateAndOverlayMusicAceStep } from './src/skills/generateMusicAceStep.js';
+(async () => {
+  const output = await generateAndOverlayMusicAceStep(
+    './output/video.mp4',
+    './output/with-music.mp4',
+    { genre: 'cyberpunk', duration: 30 }
+  );
+  console.log('Output:', output);
+})();
 "
 ```
 
 ## Programmatic Usage
 
 ```typescript
-import { generateMusic, overlayMusic, generateAndOverlayMusic } from "./src/skills/generateMusic.js";
+import {
+  generateMusicAceStep,
+  overlayMusic,
+  generateAndOverlayMusicAceStep,
+} from "./src/skills/generateMusicAceStep.js";
 
 // Option A: Generate and overlay in one call
-const outputPath = await generateAndOverlayMusic(
+const outputPath = await generateAndOverlayMusicAceStep(
   "./output/video.mp4",
   "./output/with-music.mp4",
-  { genre: "cinematic" },
-  0.15  // music volume (0.15 = quiet background)
+  { genre: "cinematic", duration: 30 },
+  0.12, // music volume (low background)
 );
 
-// Option B: Generate separately (cache for reuse)
-const music = await generateMusic({ genre: "lofi" });
-const outputPath2 = await overlayMusic({
-  videoPath: "./output/video.mp4",
+// Option B: Generate separately
+const music = await generateMusicAceStep({
+  genre: "lofi",
+  duration: 30,
+  timeout: 180, // max wait in seconds
+});
+
+// Overlay onto multiple videos
+const video2 = await overlayMusic({
+  videoPath: "./output/video2.mp4",
   musicPath: music.musicPath,
-  outputPath: "./output/with-music.mp4",
-  musicVolume: 0.2,
+  outputPath: "./output/video2-with-music.mp4",
+  musicVolume: 0.15,
 });
 ```
 
@@ -69,25 +101,40 @@ const outputPath2 = await overlayMusic({
 | `action` | High-energy percussion, aggressive synths |
 | `spiritual` | Meditative, Indian classical influences |
 | `retro` | 80s retro synthwave |
+| `upbeat` | Upbeat electronic pop instrumental |
+| `piano` | Beautiful solo piano, contemporary classical |
 
 ## Options
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `genre` | `string` | `"cinematic"` | Music genre/style |
-| `prompt` | `string` | auto | Custom Suno prompt (overrides genre) |
+| `prompt` | `string` | auto | Custom prompt (overrides genre) |
+| `duration` | `number` | `30` | Music duration in seconds |
 | `instrumental` | `boolean` | `true` | Generate instrumental only |
-| `musicVolume` | `number` | `0.15` | Background music volume (0-1) |
+| `timeout` | `number` | `180` | Max wait time (seconds) |
+| `pollInterval` | `number` | `5` | Status check interval (seconds) |
+| `musicVolume` | `number` | `0.12` | Background music volume (0-1) |
 | `mixWithOriginal` | `boolean` | `true` | Mix with existing audio or replace |
+
+## Performance (M2 Pro 16GB)
+
+| Stage | Time |
+|---|---|
+| Cold start (first run) | ~130s (model loading) |
+| Warm generation (30s audio) | ~X seconds |
+| FFmpeg overlay | ~1-2s |
 
 ## Notes
 
-- Music generation takes 30-60 seconds (Suno API polling)
-- Generated music is ~30 seconds (Suno default), looped/re-trimmed by FFmpeg
-- Cache generated music URLs in `MUSIC_CATALOG` to avoid regeneration costs
-- Suno API pricing: included in subscription tiers
+- **No API keys, no subscriptions** — 100% free and local
+- Quality: between Suno v4.5 and v5 (commercial-grade)
+- Server must be running: `cd ACE-Step-1.5 && uv run acestep-api`
+- First run loads models (~130s), subsequent runs are faster
+- Old Suno integration preserved in `src/skills/generateMusic.ts`
 
 ## References
 
-- Source: [src/skills/generateMusic.ts](../src/skills/generateMusic.ts)
-- Suno API: https://suno.com
+- Source: [src/skills/generateMusicAceStep.ts](../src/skills/generateMusicAceStep.ts)
+- ACE-Step: https://github.com/ACE-Step/ACE-Step-1.5
+- Legacy Suno module: [src/skills/generateMusic.ts](../src/skills/generateMusic.ts)

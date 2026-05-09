@@ -3,7 +3,7 @@ import { generateScenes } from "../skills/generateScenes.js";
 import { generateVideo } from "../skills/generateVideo.js";
 import { generateVoiceLocal } from "../skills/generateVoiceLocal.js";
 import { generateCaptions } from "../skills/generateCaptions.js";
-import { generateAndOverlayMusic } from "../skills/generateMusic.js";
+import { generateAndOverlayMusicAceStep } from "../skills/generateMusicAceStep.js";
 import { downloadAndMerge } from "../skills/mergeAssets.js";
 import { saveVideo } from "../skills/upload.js";
 import { publishToYouTube } from "../skills/publishToYouTube.js";
@@ -184,20 +184,20 @@ export async function viralShortWorkflow(
     });
   }
 
-  // Step 7: Generate + overlay background music (optional)
+  // Step 7: Generate + overlay background music (optional, ACE-Step local)
   let musicPath: string | undefined;
   if (opts.withMusic) {
-    logger.step(7, 9, "Generating and overlaying background music...");
+    logger.step(7, 9, "Generating music with ACE-Step and overlaying...");
     musicPath = path.join(
       process.cwd(),
       "output",
       `viral-final-${Date.now()}.mp4`,
     );
 
-    musicPath = await generateAndOverlayMusic(
+    musicPath = await generateAndOverlayMusicAceStep(
       workingVideoPath,
       musicPath,
-      { genre: opts.musicGenre },
+      { genre: opts.musicGenre, duration: 30 },
       opts.musicVolume,
     );
 

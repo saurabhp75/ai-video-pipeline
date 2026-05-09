@@ -11,6 +11,8 @@ Idea → Script → Video → Voiceover → Captions → Music → Publish 📤
 - **@mariozechner/pi-ai** + **Opencode Go** (DeepSeek V4 Pro) for text generation
 - **fal.ai** + **Kling Video 2.5 Turbo Pro** for video generation
 - **whisper.cpp** (local) for auto-captions — no API keys, runs offline
+- **ACE-Step 1.5** (local) for background music — open-source, commercial-grade quality
+- **Suno API** (legacy, optional) for cloud-based music generation
 - **Suno API** for AI-generated background music
 - **YouTube Data API v3** for auto-publishing
 - **FFmpeg** for post-processing
