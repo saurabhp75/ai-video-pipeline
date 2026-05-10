@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "format": "npx @biomejs/biome format --write src/ skills/",
+    "format:check": "npx @biomejs/biome format src/ skills/",
+    "typecheck": "npx tsc --noEmit"
   },
   "keywords": [
     "pi-package"
@@ -30,6 +32,7 @@
     ]
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.14",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/node": "^25.6.0",
     "ts-node": "^10.9.2",

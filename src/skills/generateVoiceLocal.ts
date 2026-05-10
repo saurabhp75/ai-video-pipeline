@@ -22,29 +22,29 @@ import { logger } from "../utils/logger.js";
 export type TTSEngine = "say" | "piper" | "auto";
 
 export interface VoiceOptions {
-  /** TTS engine to use (default: "auto" — tries Piper, then macOS say, then Kling API) */
-  engine?: TTSEngine;
-  /** Voice name for macOS `say` (default: "Samantha") */
-  sayVoice?: string;
-  /** Piper model path (default: auto-detected) */
-  piperModel?: string;
-  /** Piper model config path */
-  piperConfig?: string;
-  /** Speech rate for `say` (words per minute, default: 180) */
-  sayRate?: number;
-  /** Output format (default: "mp3") */
-  format?: "wav" | "mp3";
+	/** TTS engine to use (default: "auto" — tries Piper, then macOS say, then Kling API) */
+	engine?: TTSEngine;
+	/** Voice name for macOS `say` (default: "Samantha") */
+	sayVoice?: string;
+	/** Piper model path (default: auto-detected) */
+	piperModel?: string;
+	/** Piper model config path */
+	piperConfig?: string;
+	/** Speech rate for `say` (words per minute, default: 180) */
+	sayRate?: number;
+	/** Output format (default: "mp3") */
+	format?: "wav" | "mp3";
 }
 
 export interface VoiceResult {
-  /** Path to the generated audio file */
-  audioPath: string;
-  /** URL if using Kling API fallback */
-  audioUrl?: string;
-  /** Engine used for generation */
-  engine: string;
-  /** Voice name used */
-  voice: string;
+	/** Path to the generated audio file */
+	audioPath: string;
+	/** URL if using Kling API fallback */
+	audioUrl?: string;
+	/** Engine used for generation */
+	engine: string;
+	/** Voice name used */
+	voice: string;
 }
 
 // ─── Recommended voices ───
@@ -54,10 +54,10 @@ export interface VoiceResult {
  * Samantha and Karen are the best-sounding English voices.
  */
 const MACOS_VOICES: Record<string, string> = {
-  female: "Samantha", // Best overall female voice
-  male: "Daniel",     // Best male voice (UK English)
-  female_alt: "Karen",// Good alternative female
-  male_alt: "Alex",   // Default male voice
+	female: "Samantha", // Best overall female voice
+	male: "Daniel", // Best male voice (UK English)
+	female_alt: "Karen", // Good alternative female
+	male_alt: "Alex", // Default male voice
 } as const;
 
 /**
@@ -65,194 +65,222 @@ const MACOS_VOICES: Record<string, string> = {
  * en_US-lessac-medium: female voice, medium quality, ~50MB model
  */
 const PIPER_VOICES = {
-  female: {
-    model: "/Users/saurabh/dev/projects/piper-voices/en_US-lessac-medium.onnx",
-    config: "/Users/saurabh/dev/projects/piper-voices/en_US-lessac-medium.onnx.json",
-    name: "Lessac (female, US English)",
-  },
-  // Add more models as you download them:
-  // male: { model: "...", config: "...", name: "Ryan (male, US English)" },
+	female: {
+		model: "/Users/saurabh/dev/projects/piper-voices/en_US-lessac-medium.onnx",
+		config:
+			"/Users/saurabh/dev/projects/piper-voices/en_US-lessac-medium.onnx.json",
+		name: "Lessac (female, US English)",
+	},
+	// Add more models as you download them:
+	// male: { model: "...", config: "...", name: "Ryan (male, US English)" },
 };
 
 // ─── Engine detection ───
 
 let cachedAvailable: { say: boolean; piper: boolean } | null = null;
 
-async function detectAvailableEngines(): Promise<{ say: boolean; piper: boolean }> {
-  if (cachedAvailable) return cachedAvailable;
+async function detectAvailableEngines(): Promise<{
+	say: boolean;
+	piper: boolean;
+}> {
+	if (cachedAvailable) return cachedAvailable;
 
-  const { existsSync } = await import("fs");
+	const { existsSync } = await import("fs");
 
-  cachedAvailable = {
-    say: process.platform === "darwin", // macOS only
-    piper: existsSync(
-      process.env.PIPER_BINARY ?? "/opt/homebrew/bin/piper",
-    ),
-  };
+	cachedAvailable = {
+		say: process.platform === "darwin", // macOS only
+		piper: existsSync(process.env.PIPER_BINARY ?? "/opt/homebrew/bin/piper"),
+	};
 
-  return cachedAvailable;
+	return cachedAvailable;
 }
 
 // ─── macOS `say` TTS ───
 
 async function generateWithSay(
-  text: string,
-  outputPath: string,
-  voice: string,
-  rate: number,
-  format: "wav" | "mp3",
+	text: string,
+	outputPath: string,
+	voice: string,
+	rate: number,
+	format: "wav" | "mp3",
 ): Promise<void> {
-  logger.info("Generating voiceover with macOS say...", { voice, rate });
+	logger.info("Generating voiceover with macOS say...", { voice, rate });
 
-  // macOS say outputs AIFF, which we convert to mp3/wav with ffmpeg
-  const aiffPath = outputPath.replace(/\.(mp3|wav)$/, ".aiff");
+	// macOS say outputs AIFF, which we convert to mp3/wav with ffmpeg
+	const aiffPath = outputPath.replace(/\.(mp3|wav)$/, ".aiff");
 
-  await new Promise<void>((resolve, reject) => {
-    const proc = spawn("say", [
-      "-v", voice,
-      "-r", String(rate),
-      "-o", aiffPath.replace(/\.aiff$/, ""), // say appends .aiff automatically
-      text,
-    ], { stdio: ["ignore", "pipe", "pipe"] });
+	await new Promise<void>((resolve, reject) => {
+		const proc = spawn(
+			"say",
+			[
+				"-v",
+				voice,
+				"-r",
+				String(rate),
+				"-o",
+				aiffPath.replace(/\.aiff$/, ""), // say appends .aiff automatically
+				text,
+			],
+			{ stdio: ["ignore", "pipe", "pipe"] },
+		);
 
-    let stderr = "";
-    proc.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
+		let stderr = "";
+		proc.stderr.on("data", (d: Buffer) => {
+			stderr += d.toString();
+		});
 
-    proc.on("close", (code: number) => {
-      if (code === 0) resolve();
-      else reject(new Error(`say failed with code ${code}: ${stderr}`));
-    });
+		proc.on("close", (code: number) => {
+			if (code === 0) resolve();
+			else reject(new Error(`say failed with code ${code}: ${stderr}`));
+		});
 
-    proc.on("error", reject);
-  });
+		proc.on("error", reject);
+	});
 
-  // Convert AIFF to desired format using ffmpeg
-  if (format === "mp3") {
-    await convertAudio(aiffPath, outputPath);
-    await rm(aiffPath, { force: true });
-  } else {
-    // For WAV, just convert AIFF to WAV
-    await convertAudio(aiffPath, outputPath);
-    await rm(aiffPath, { force: true });
-  }
+	// Convert AIFF to desired format using ffmpeg
+	if (format === "mp3") {
+		await convertAudio(aiffPath, outputPath);
+		await rm(aiffPath, { force: true });
+	} else {
+		// For WAV, just convert AIFF to WAV
+		await convertAudio(aiffPath, outputPath);
+		await rm(aiffPath, { force: true });
+	}
 }
 
 // ─── Piper TTS ───
 
 async function generateWithPiper(
-  text: string,
-  outputPath: string,
-  modelPath: string,
-  configPath: string | undefined,
-  format: "wav" | "mp3",
+	text: string,
+	outputPath: string,
+	modelPath: string,
+	configPath: string | undefined,
+	format: "wav" | "mp3",
 ): Promise<void> {
-  const piperBin = process.env.PIPER_BINARY ?? "/opt/homebrew/bin/piper";
+	const piperBin = process.env.PIPER_BINARY ?? "/opt/homebrew/bin/piper";
 
-  logger.info("Generating voiceover with Piper TTS...", { model: modelPath });
+	logger.info("Generating voiceover with Piper TTS...", { model: modelPath });
 
-  const args: string[] = [
-    "-m", modelPath,
-    "-f", outputPath.replace(/\.mp3$/, ".wav"), // Piper outputs WAV
-  ];
+	const args: string[] = [
+		"-m",
+		modelPath,
+		"-f",
+		outputPath.replace(/\.mp3$/, ".wav"), // Piper outputs WAV
+	];
 
-  if (configPath) {
-    args.push("-c", configPath);
-  }
+	if (configPath) {
+		args.push("-c", configPath);
+	}
 
-  // Write text to temp file and feed to piper
-  const tmpDir = await mkdtemp(join(tmpdir(), "piper-tts-"));
-  const textFile = join(tmpDir, "input.txt");
+	// Write text to temp file and feed to piper
+	const tmpDir = await mkdtemp(join(tmpdir(), "piper-tts-"));
+	const textFile = join(tmpDir, "input.txt");
 
-  try {
-    await writeFile(textFile, text, "utf-8");
-    args.push("-i", textFile);
+	try {
+		await writeFile(textFile, text, "utf-8");
+		args.push("-i", textFile);
 
-    await new Promise<void>((resolve, reject) => {
-      const proc = spawn(piperBin, args, {
-        stdio: ["ignore", "pipe", "pipe"],
-      });
+		await new Promise<void>((resolve, reject) => {
+			const proc = spawn(piperBin, args, {
+				stdio: ["ignore", "pipe", "pipe"],
+			});
 
-      let stderr = "";
-      proc.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
+			let stderr = "";
+			proc.stderr.on("data", (d: Buffer) => {
+				stderr += d.toString();
+			});
 
-      proc.on("close", (code: number) => {
-        if (code === 0) resolve();
-        else reject(new Error(`Piper failed with code ${code}: ${stderr.slice(-300)}`));
-      });
+			proc.on("close", (code: number) => {
+				if (code === 0) resolve();
+				else
+					reject(
+						new Error(`Piper failed with code ${code}: ${stderr.slice(-300)}`),
+					);
+			});
 
-      proc.on("error", reject);
-    });
+			proc.on("error", reject);
+		});
 
-    // Convert WAV to MP3 if needed
-    const wavPath = outputPath.replace(/\.mp3$/, ".wav");
-    if (format === "mp3") {
-      await convertAudio(wavPath, outputPath);
-      await rm(wavPath, { force: true });
-    }
-  } finally {
-    await rm(tmpDir, { recursive: true, force: true });
-  }
+		// Convert WAV to MP3 if needed
+		const wavPath = outputPath.replace(/\.mp3$/, ".wav");
+		if (format === "mp3") {
+			await convertAudio(wavPath, outputPath);
+			await rm(wavPath, { force: true });
+		}
+	} finally {
+		await rm(tmpDir, { recursive: true, force: true });
+	}
 }
 
 // ─── Kling TTS API (fallback) ───
 
 async function generateWithKlingAPI(
-  text: string,
-  outputPath: string,
+	text: string,
+	outputPath: string,
 ): Promise<string> {
-  logger.info("Generating voiceover with Kling API (fallback)...");
+	logger.info("Generating voiceover with Kling API (fallback)...");
 
-  try {
-    const { generateVoice } = await import("./generateVoice.js");
-    const url = await generateVoice(text);
+	try {
+		const { generateVoice } = await import("./generateVoice.js");
+		const url = await generateVoice(text);
 
-    // Download the audio
-    const response = await fetch(url);
-    const buffer = Buffer.from(await response.arrayBuffer());
-    await writeFile(outputPath, buffer);
+		// Download the audio
+		const response = await fetch(url);
+		const buffer = Buffer.from(await response.arrayBuffer());
+		await writeFile(outputPath, buffer);
 
-    logger.info("Kling voiceover downloaded", { size: buffer.length });
+		logger.info("Kling voiceover downloaded", { size: buffer.length });
 
-    return url;
-  } catch (err) {
-    throw new Error(
-      `Kling API fallback failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-  }
+		return url;
+	} catch (err) {
+		throw new Error(
+			`Kling API fallback failed: ${err instanceof Error ? err.message : String(err)}`,
+		);
+	}
 }
 
 // ─── Audio conversion utility ───
 
 async function convertAudio(
-  inputPath: string,
-  outputPath: string,
+	inputPath: string,
+	outputPath: string,
 ): Promise<void> {
-  const ffmpegBin = "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg";
+	const ffmpegBin = "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg";
 
-  // Determine codec from extension
-  const ext = outputPath.split(".").pop()?.toLowerCase();
-  const audioCodec = ext === "mp3" ? "libmp3lame" : "pcm_s16le";
+	// Determine codec from extension
+	const ext = outputPath.split(".").pop()?.toLowerCase();
+	const audioCodec = ext === "mp3" ? "libmp3lame" : "pcm_s16le";
 
-  await new Promise<void>((resolve, reject) => {
-    const proc = spawn(ffmpegBin, [
-      "-i", inputPath,
-      "-acodec", audioCodec,
-      "-ar", ext === "mp3" ? "44100" : "22050",
-      "-ac", "1",
-      "-y",
-      outputPath,
-    ], { stdio: ["ignore", "pipe", "pipe"] });
+	await new Promise<void>((resolve, reject) => {
+		const proc = spawn(
+			ffmpegBin,
+			[
+				"-i",
+				inputPath,
+				"-acodec",
+				audioCodec,
+				"-ar",
+				ext === "mp3" ? "44100" : "22050",
+				"-ac",
+				"1",
+				"-y",
+				outputPath,
+			],
+			{ stdio: ["ignore", "pipe", "pipe"] },
+		);
 
-    let stderr = "";
-    proc.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
+		let stderr = "";
+		proc.stderr.on("data", (d: Buffer) => {
+			stderr += d.toString();
+		});
 
-    proc.on("close", (code: number) => {
-      if (code === 0) resolve();
-      else reject(new Error(`Audio conversion failed: ${stderr.slice(-200)}`));
-    });
+		proc.on("close", (code: number) => {
+			if (code === 0) resolve();
+			else reject(new Error(`Audio conversion failed: ${stderr.slice(-200)}`));
+		});
 
-    proc.on("error", reject);
-  });
+		proc.on("error", reject);
+	});
 }
 
 // ─── Main function ───
@@ -280,76 +308,86 @@ async function convertAudio(
  * ```
  */
 export async function generateVoiceLocal(
-  text: string,
-  outputPath: string,
-  options: VoiceOptions = {},
+	text: string,
+	outputPath: string,
+	options: VoiceOptions = {},
 ): Promise<VoiceResult> {
-  const engines = await detectAvailableEngines();
-  const format = options.format ?? "mp3";
-  const engine: TTSEngine = options.engine ?? "auto";
+	const engines = await detectAvailableEngines();
+	const format = options.format ?? "mp3";
+	const engine: TTSEngine = options.engine ?? "auto";
 
-  // ─── Piper (best quality, explicit or auto) ───
-  if (engine === "piper" || (engine === "auto" && engines.piper)) {
-    const piperModel =
-      options.piperModel ?? PIPER_VOICES.female.model;
-    const piperConfig =
-      options.piperConfig ?? PIPER_VOICES.female.config;
+	// ─── Piper (best quality, explicit or auto) ───
+	if (engine === "piper" || (engine === "auto" && engines.piper)) {
+		const piperModel = options.piperModel ?? PIPER_VOICES.female.model;
+		const piperConfig = options.piperConfig ?? PIPER_VOICES.female.config;
 
-    const { existsSync } = await import("fs");
-    if (existsSync(piperModel)) {
-      await generateWithPiper(text, outputPath, piperModel, piperConfig, format);
-      return {
-        audioPath: outputPath,
-        engine: "piper",
-        voice: PIPER_VOICES.female.name,
-      };
-    }
+		const { existsSync } = await import("fs");
+		if (existsSync(piperModel)) {
+			await generateWithPiper(
+				text,
+				outputPath,
+				piperModel,
+				piperConfig,
+				format,
+			);
+			return {
+				audioPath: outputPath,
+				engine: "piper",
+				voice: PIPER_VOICES.female.name,
+			};
+		}
 
-    logger.warn("Piper model not found, falling back to macOS say", {
-      model: piperModel,
-    });
-    // Fall through to say below
-  }
+		logger.warn("Piper model not found, falling back to macOS say", {
+			model: piperModel,
+		});
+		// Fall through to say below
+	}
 
-  // ─── macOS say (built-in) — always available on macOS
-  if (engine === "say" || (engine === "auto" && process.platform === "darwin")) {
-    const voice: string = options.sayVoice ?? (MACOS_VOICES as Record<string, string>).female!;
-    const rate = options.sayRate ?? 180;
+	// ─── macOS say (built-in) — always available on macOS
+	if (
+		engine === "say" ||
+		(engine === "auto" && process.platform === "darwin")
+	) {
+		const voice: string =
+			options.sayVoice ?? (MACOS_VOICES as Record<string, string>).female!;
+		const rate = options.sayRate ?? 180;
 
-    await generateWithSay(text, outputPath, voice, rate, format);
-    return {
-      audioPath: outputPath,
-      engine: "say",
-      voice,
-    };
-  }
+		await generateWithSay(text, outputPath, voice, rate, format);
+		return {
+			audioPath: outputPath,
+			engine: "say",
+			voice,
+		};
+	}
 
-  // ─── Kling API (fallback) ───
-  if (process.env.FAL_KEY) {
-    logger.warn("No local TTS available, falling back to Kling API");
-    const url = await generateWithKlingAPI(text, outputPath);
-    return {
-      audioPath: outputPath,
-      audioUrl: url,
-      engine: "kling-api",
-      voice: "calm_story1",
-    };
-  }
+	// ─── Kling API (fallback) ───
+	if (process.env.FAL_KEY) {
+		logger.warn("No local TTS available, falling back to Kling API");
+		const url = await generateWithKlingAPI(text, outputPath);
+		return {
+			audioPath: outputPath,
+			audioUrl: url,
+			engine: "kling-api",
+			voice: "calm_story1",
+		};
+	}
 
-  throw new Error(
-    "No TTS engine available. Install Piper TTS (brew install piper) or set FAL_KEY for Kling API fallback.",
-  );
+	throw new Error(
+		"No TTS engine available. Install Piper TTS (brew install piper) or set FAL_KEY for Kling API fallback.",
+	);
 }
 
 /**
  * Convenience function: generate voiceover with the best local engine
  * and return the audio path. Throws if nothing works.
  */
-export async function speak(text: string, outputPath?: string): Promise<string> {
-  const path =
-    outputPath ??
-    join(process.cwd(), "output", `voice-${Date.now()}.mp3`);
+export async function speak(
+	text: string,
+	outputPath?: string,
+): Promise<string> {
+	const path =
+		outputPath ?? join(process.cwd(), "output", `voice-${Date.now()}.mp3`);
 
-  const result = await generateVoiceLocal(text, path);
-  return result.audioPath;
+	const result = await generateVoiceLocal(text, path);
+	return result.audioPath;
 }

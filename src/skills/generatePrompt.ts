@@ -11,28 +11,28 @@ Focus on:
 - high retention`;
 
 export async function generateVideoPrompt(topic: string) {
-  const model = getModel("opencode-go", "deepseek-v4-pro");
+	const model = getModel("opencode-go", "deepseek-v4-pro");
 
-  const context = {
-    systemPrompt: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user" as const,
-        content: `Create a viral cinematic AI video prompt about: ${topic}`,
-        timestamp: Date.now(),
-      },
-    ],
-  };
+	const context = {
+		systemPrompt: SYSTEM_PROMPT,
+		messages: [
+			{
+				role: "user" as const,
+				content: `Create a viral cinematic AI video prompt about: ${topic}`,
+				timestamp: Date.now(),
+			},
+		],
+	};
 
-  const response = await complete(model, context, {
-    apiKey: process.env.OPENCODE_API_KEY,
-  });
+	const response = await complete(model, context, {
+		apiKey: process.env.OPENCODE_API_KEY,
+	});
 
-  for (const block of response.content) {
-    if (block.type === "text") {
-      return block.text;
-    }
-  }
+	for (const block of response.content) {
+		if (block.type === "text") {
+			return block.text;
+		}
+	}
 
-  throw new Error("No text content in model response");
+	throw new Error("No text content in model response");
 }
