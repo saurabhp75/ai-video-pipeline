@@ -135,6 +135,96 @@ const result = await viralShortWorkflow(
 console.log(result.finalPath); // ./output/viral-final-1712345678.mp4
 ```
 
+## How It Works
+
+Here's exactly what happens when you run:
+
+```bash
+npx tsx src/index.ts "Mumbai cyberpunk monsoon" 1 --voice --captions --music --music-genre bollywood
+```
+
+### Step-by-step Flow
+
+```
+STEP 1: Generate Idea (LLM)
+├── Calls pi-ai / DeepSeek V4 Pro
+├── Input: "Mumbai cyberpunk monsoon"
+├── Output: { title, niche, hook, description, visualStyle }
+└── API key needed: OPENCODE_API_KEY
+
+STEP 2: Generate Scenes (LLM)
+├── Calls pi-ai / DeepSeek V4 Pro
+├── Input: topic + numScenes (1)
+├── Output: [{ prompt: "cinematic drone shot of..." }]
+└── API key needed: OPENCODE_API_KEY
+
+STEP 3: Generate Video (fal.ai Kling, or OpenRouter if --openrouter)
+├── Calls fal.ai Kling Video 2.5 Turbo Pro (default)
+├── Input: cinematic prompt from step 2
+├── Output: videoUrl (hosted .mp4)
+├── Duration: 10s, aspect: 9:16
+└── API key needed: FAL_KEY (or OPENROUTER_API_KEY with --openrouter)
+
+STEP 4: Generate Voiceover (local TTS)
+├── Piper TTS (neural) or macOS `say` (built-in)
+├── Input: "Hook: {idea.hook}. {idea.description}"
+├── Output: ./output/voice-1712345678.mp3 (local file)
+└── API key needed: NONE
+
+STEP 5: Merge Video + Audio (FFmpeg)
+├── Downloads the Kling video from the URL
+├── Merges with local voiceover MP3
+├── Output: ./output/viral-merged-1712345678.mp4
+└── ffmpeg -i video.mp4 -i voice.mp3 -shortest merged.mp4
+
+STEP 6: Generate Captions (whisper.cpp + FFmpeg)
+├── Extracts audio from merged video → 16kHz mono WAV
+├── Runs whisper.cpp --output-json-full → word-level timestamps
+├── Generates ASS subtitle file with TikTok-style formatting
+├── Burns subtitles into video via ffmpeg-full (libass)
+├── Input: ./output/viral-merged-1712345678.mp4
+├── Output: ./output/viral-captioned-1712345678.mp4
+└── API key needed: NONE
+
+STEP 7: Generate + Overlay Music (ACE-Step 1.5)
+├── Calls ACE-Step API server (localhost:8001, must be running)
+│   ├── POST /release_task → task_id
+│   ├── Polls POST /query_result every 5s until status=1
+│   └── Downloads MP3 via GET /v1/audio?path=...
+├── ACE-Step generates 30s of Bollywood instrumental music
+├── Overlays music onto captioned video with FFmpeg
+│   └── music volume: 0.12 (quiet background), mixed with original audio
+├── Input: ./output/viral-captioned-1712345678.mp4
+├── Output: ./output/viral-final-1712345678.mp4
+└── API key needed: NONE (ACE-Step runs locally)
+
+STEP 8: Save Final Video
+├── Copies/moves the final video to output/
+├── Output: ./output/viral-final-1712345678.mp4
+└── Ready to upload manually to any platform
+```
+
+### What Runs Where
+
+| Component | Runs on | API key? | Cold start |
+|---|---|---|---|
+| Idea + Script (LLM) | Cloud (DeepSeek V4) | `OPENCODE_API_KEY` | None |
+| Video gen (Kling) | Cloud (fal.ai or OpenRouter) | `FAL_KEY` / `OPENROUTER_API_KEY` | None |
+| Voiceover (Piper/say) | Your Mac (M2 Pro) | None | Instant |
+| Captions (whisper.cpp) | Your Mac (M2 Pro) | None | ~1s |
+| Music (ACE-Step) | Your Mac (M2 Pro, server) | None | ~130s first run |
+
+### Files Produced in output/
+
+```
+output/
+├── voice-1712345678.mp3         # Voiceover audio
+├── viral-merged-1712345678.mp4  # Video + voice (no captions/music)
+├── viral-captioned-1712345678.mp4 # + burnt-in captions
+├── music-bollywood-1712345678.mp3 # Generated background music
+└── viral-final-1712345678.mp4   # Everything combined → FINAL
+```
+
 ## Pipeline
 
 ```
