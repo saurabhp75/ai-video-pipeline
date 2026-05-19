@@ -53,6 +53,7 @@ npx tsx src/index.ts [topic] [numScenes] [flags]
 | `--captions` | Generate burnt-in captions (whisper.cpp) |
 | `--music` | Generate + overlay background music (ACE-Step) |
 | `--music-genre <genre>` | Music genre (default: cinematic). See [Music Genres](#music-genres) for all options |
+| `--niche <niche>` | Content niche for idea generation (default: "Cyberpunk India"). See [Niches](#niches) for all options |
 | `--openrouter` | Use OpenRouter for video gen (default: fal.ai Kling). Requires `OPENROUTER_API_KEY` in `.env` |
 
 ### Music Genres
@@ -81,6 +82,30 @@ npx tsx src/index.ts [topic] [numScenes] [flags]
 | `sufi` | Sufi qawwali, harmonium, clapping rhythms, spiritual ecstasy |
 | `indian_classical_fusion` | Indian classical meets electronic, tanpura drones + synths |
 
+### Niches
+
+| Niche | Description |
+|---|---|
+| `startup news` | Startup funding, launches, tech business updates |
+| `finance` | Personal finance, investing, money hacks |
+| `motivation` | Motivational edits, success stories |
+| `spirituality` | Spiritual wisdom, meditation, consciousness |
+| `AI news` | AI breakthroughs, tools, industry news |
+| `cyberpunk edits` | Dark futuristic aesthetic edits |
+| `meme reels` | Viral meme formats, trending audio |
+| `relationship stories` | Relatable relationship content, storytime |
+| `horror stories` | Creepy narratives, POV horror |
+| `mythology` | Ancient myths, legends, folklore cinematics |
+| `Cyberpunk India` | Futuristic Indian cityscapes, neon + tradition |
+| `Indian mythology cinematics` | Epic Indian mythological scenes |
+| `Historical alternate reality` | "What if" historical timelines |
+| `Horror POV videos` | First-person horror experiences |
+| `Motivational edits` | High-energy motivational content |
+| `Fake movie trailers` | Cinematic fake trailers for imaginary films |
+| `AI-generated luxury lifestyle` | AI-generated aspirational lifestyle content |
+| `AI podcast clips` | AI-generated podcast highlight clips |
+| `Tech future concepts` | Future technology concept visualizations |
+
 **Examples:**
 
 ```bash
@@ -98,6 +123,9 @@ npx tsx src/index.ts "Neon Tokyo night market" 1 --voice --captions --music --mu
 
 # Use OpenRouter for video (unified billing with text gen)
 npx tsx src/index.ts "Mumbai monsoon" 1 --voice --captions --openrouter
+
+# With a specific content niche
+npx tsx src/index.ts "Latest AI tools" 1 --voice --captions --music --niche "AI news" --music-genre cyberpunk
 ```
 
 ### Pi Coding Agent Skills

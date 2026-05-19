@@ -1,5 +1,13 @@
 import { viralShortWorkflow } from "./workflows/viralShortWorkflow.js";
 
+/** Extract value for a CLI flag that takes an argument (e.g., --niche cyberpunk). */
+function getFlag(flag: string): string | undefined {
+	const idx = process.argv.indexOf(flag);
+	if (idx === -1) return undefined;
+	const val = process.argv[idx + 1];
+	return val && !val.startsWith("--") ? val : undefined;
+}
+
 async function main() {
 	const topic =
 		process.argv[2] ??
@@ -15,10 +23,11 @@ async function main() {
 	// Video provider
 	const useOpenRouter = process.argv.includes("--openrouter");
 
+	// Content niche
+	const niche = getFlag("--niche");
+
 	// Music options
-	const musicGenreIdx = process.argv.indexOf("--music-genre");
-	const musicGenre =
-		musicGenreIdx !== -1 ? process.argv[musicGenreIdx + 1] : "cinematic";
+	const musicGenre = getFlag("--music-genre") ?? "cinematic";
 
 	console.log("=".repeat(60));
 	console.log("  AI Video Pipeline");
@@ -33,6 +42,7 @@ async function main() {
 		musicGenre,
 		musicVolume: 0.15,
 		videoProvider: useOpenRouter ? "openrouter" : "fal",
+		niche,
 	});
 
 	console.log();

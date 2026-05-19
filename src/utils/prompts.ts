@@ -59,6 +59,16 @@ export const NEGATIVE_PROMPT =
 // ─── Trending content niches ───
 
 export const TRENDING_NICHES = [
+	"startup news",
+	"finance",
+	"motivation",
+	"spirituality",
+	"AI news",
+	"cyberpunk edits",
+	"meme reels",
+	"relationship stories",
+	"horror stories",
+	"mythology",
 	"Indian mythology cinematics",
 	"Cyberpunk India",
 	"Historical alternate reality",
